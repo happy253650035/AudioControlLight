@@ -6,6 +6,8 @@ import android.app.Activity;
 import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
@@ -22,6 +24,7 @@ public class MainActivity extends Activity {
 	private Button myBtn;
 	private MediaRecorder mRecorder = null;
 	private static String mFileName = null;
+	private Handler mhandler;
 	@Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -37,6 +40,17 @@ public class MainActivity extends Activity {
         
         mFileName = Environment.getExternalStorageDirectory().getAbsolutePath();
         mFileName += "/audiorecord.3gp";
+        mhandler = new Handler(){
+        	@Override 
+        	public void handleMessage(Message msg) { 
+        	//²Ù×÷½çÃæ 
+        		linear.setBackgroundResource(R.drawable.light_off);
+				myBtn.setBackgroundResource(R.drawable.off);
+				stopRecording();
+				close = true;
+        	super.handleMessage(msg); 
+        	} 
+        };
         
         linear = (RelativeLayout) findViewById(R.id.LinearLayout1);
         setContentView(linear);
@@ -48,6 +62,7 @@ public class MainActivity extends Activity {
 					linear.setBackgroundResource(R.drawable.light_on);
 					myBtn.setBackgroundResource(R.drawable.on);
 					startRecording();
+					mhandler.sendEmptyMessage(0);
 					close = false;
 				} else {
 					linear.setBackgroundResource(R.drawable.light_off);

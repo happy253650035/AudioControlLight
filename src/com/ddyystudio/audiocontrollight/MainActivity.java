@@ -2,7 +2,12 @@ package com.ddyystudio.audiocontrollight;
 
 import java.io.IOException;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.hardware.Camera;
+import android.hardware.Camera.Parameters;
+import android.hardware.SensorListener;
+import android.hardware.SensorManager;
 import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.os.Environment;
@@ -14,18 +19,52 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.animation.Animation;
+import android.view.animation.RotateAnimation;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
-public class MainActivity extends Activity {
+@SuppressLint("HandlerLeak")
+public class MainActivity extends Activity implements SensorListener {
 	private static final String LOG_TAG = "MainActivity";
 	private RelativeLayout linear;
 	private boolean close = true;
 	private Button myBtn;
 	private MediaRecorder mRecorder = null;
 	private static String mFileName = null;
-	private Handler mhandler;
-	private Thread thread;
+	private Camera camera = null;
+	private Parameters parameters = null;
+	private ImageView ImgCompass;
+	private SensorManager sm = null;
+	private RotateAnimation myAni = null;
+	private float DegressQuondam = 0.0f;
+	private Handler mhandler = new Handler(){
+		public void handleMessage(Message msg) { 
+    	//操作界面
+			lightSwitch(close);
+    	super.handleMessage(msg); 
+    	} 
+    };
+	private Thread thread = new Thread(new Runnable() {
+		@Override
+		public void run() {
+			// TODO Auto-generated method stub
+			long time1 = System.currentTimeMillis();
+			long time2 = time1;
+			while (true) {
+				time2 = System.currentTimeMillis();
+				if (time2 - time1 > 30) {
+					if (mRecorder.getMaxAmplitude() > 10000) {
+						mhandler.sendEmptyMessage(0);
+						time1 = time2 + 600;
+					}else{
+						time1 = time2;
+					}
+				}
+			}
+		}
+	});
 	@Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -41,61 +80,75 @@ public class MainActivity extends Activity {
         
         mFileName = Environment.getExternalStorageDirectory().getAbsolutePath();
         mFileName += "/audiorecord.3gp";
-        mhandler = new Handler(){
-        	@Override 
-        	public void handleMessage(Message msg) { 
-        	//操作界面 
-        		if (close) {
-					linear.setBackgroundResource(R.drawable.light_on);
-					myBtn.setBackgroundResource(R.drawable.on);
-//					mhandler.sendEmptyMessage(0);
-					close = false;
-				} else {
-					linear.setBackgroundResource(R.drawable.light_off);
-					myBtn.setBackgroundResource(R.drawable.off);
-//					stopRecording();
-					close = true;
-				}
-        	super.handleMessage(msg); 
-        	} 
-        };
         
         linear = (RelativeLayout) findViewById(R.id.LinearLayout1);
         setContentView(linear);
         startRecording();
-        thread = new Thread(new Runnable() {
-			@Override
-			public void run() {
-				// TODO Auto-generated method stub
-				while (true) {
-					if (mRecorder.getMaxAmplitude() > 10000) {
-						mhandler.sendEmptyMessage(0);
-					}
-				}
-			}
-		});
 		thread.start();
+		camera = Camera.open();
+		ImgCompass = (ImageView) findViewById(R.id.imageView1);
         myBtn = (Button) findViewById(R.id.button1);
         myBtn.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View view) {
-				if (close) {
-					linear.setBackgroundResource(R.drawable.light_on);
-					myBtn.setBackgroundResource(R.drawable.on);
-					close = false;
-				} else {
-					linear.setBackgroundResource(R.drawable.light_off);
-					myBtn.setBackgroundResource(R.drawable.off);
-					close = true;
-				}
+				lightSwitch(close);
 			}
 		});
     }
+	
+	protected void lightSwitch(boolean close) {
+		if (close) {
+			linear.setBackgroundResource(R.drawable.light_on);
+			myBtn.setBackgroundResource(R.drawable.on);
+			parameters = camera.getParameters();
+			parameters.setFlashMode(Parameters.FLASH_MODE_TORCH);// 开启
+			camera.setParameters(parameters);
+			this.close = false;
+		} else {
+			linear.setBackgroundResource(R.drawable.light_off);
+			myBtn.setBackgroundResource(R.drawable.off);
+			parameters.setFlashMode(Parameters.FLASH_MODE_OFF);// 关闭
+			camera.setParameters(parameters);
+			this.close = true;
+		}
+	}
+	
+	private void AniRotateImage(float fDegress) {
+		myAni = new RotateAnimation(DegressQuondam, fDegress,
+				Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF,
+				0.5f);
+		myAni.setDuration(30);
+		myAni.setFillAfter(true);
+
+		ImgCompass.startAnimation(myAni);
+
+		DegressQuondam = fDegress;
+	}
 
     @Override
 	protected void onStart() {
-		// TODO Auto-generated method stub
-		super.onStart();
+    	sm = (SensorManager) getSystemService(SENSOR_SERVICE);
+    	super.onStart();
+	}
+
+	@Override
+	protected void onPause() {
+		stopRecording();
+		camera.release();
+		super.onPause();
+	}
+
+	@Override
+	protected void onResume() {
+		sm.registerListener(this, SensorManager.SENSOR_ORIENTATION
+				 | SensorManager.SENSOR_ACCELEROMETER, SensorManager.SENSOR_DELAY_FASTEST);
+		super.onResume();
+	}
+
+	@Override
+	protected void onStop() {
+		sm.unregisterListener(this);
+		super.onStop();
 	}
 
 	@Override
@@ -103,6 +156,23 @@ public class MainActivity extends Activity {
         getMenuInflater().inflate(R.menu.activity_main, menu);
         return true;
     }
+	
+	public void onSensorChanged(int sensor, float[] values) {
+		synchronized (this) {
+			if (sensor == SensorManager.SENSOR_ORIENTATION) {
+				// OrientText.setText("--- NESW ---");
+				if (Math.abs(values[0] - DegressQuondam) < 1)
+					return;
+				if (DegressQuondam != -values[0])
+					AniRotateImage(-values[0]);
+			}
+		}
+	}
+	
+	@Override
+	public void onAccuracyChanged(int sensor, int accuracy) {
+		// TODO Auto-generated method stub
+	}
 	
 	private void startRecording() {
 		mRecorder = new MediaRecorder();
@@ -122,5 +192,5 @@ public class MainActivity extends Activity {
         mRecorder.stop();
         mRecorder.release();
         mRecorder = null;
-    }
+	}
 }

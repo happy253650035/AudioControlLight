@@ -16,4 +16,22 @@
         android:background="@drawable/off"
         android:layout_marginBottom="125dp" />
 
+    <ImageView
+        android:id="@+id/imageView1"
+        android:layout_width="100dip"
+        android:layout_height="100dip"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"
+        android:src="@drawable/compass" />
+
+    <ImageView
+        android:id="@+id/imageView2"
+        android:layout_width="40dip"
+        android:layout_height="40dip"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:layout_marginBottom="24dp"
+        android:layout_marginRight="16dp"
+        android:src="@drawable/x" />
+
 </RelativeLayout>

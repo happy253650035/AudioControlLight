@@ -25,6 +25,7 @@ public class MainActivity extends Activity {
 	private MediaRecorder mRecorder = null;
 	private static String mFileName = null;
 	private Handler mhandler;
+	private Thread thread;
 	@Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -44,16 +45,36 @@ public class MainActivity extends Activity {
         	@Override 
         	public void handleMessage(Message msg) { 
         	//²Ù×÷½çÃæ 
-        		linear.setBackgroundResource(R.drawable.light_off);
-				myBtn.setBackgroundResource(R.drawable.off);
-				stopRecording();
-				close = true;
+        		if (close) {
+					linear.setBackgroundResource(R.drawable.light_on);
+					myBtn.setBackgroundResource(R.drawable.on);
+//					mhandler.sendEmptyMessage(0);
+					close = false;
+				} else {
+					linear.setBackgroundResource(R.drawable.light_off);
+					myBtn.setBackgroundResource(R.drawable.off);
+//					stopRecording();
+					close = true;
+				}
         	super.handleMessage(msg); 
         	} 
         };
         
         linear = (RelativeLayout) findViewById(R.id.LinearLayout1);
         setContentView(linear);
+        startRecording();
+        thread = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				while (true) {
+					if (mRecorder.getMaxAmplitude() > 10000) {
+						mhandler.sendEmptyMessage(0);
+					}
+				}
+			}
+		});
+		thread.start();
         myBtn = (Button) findViewById(R.id.button1);
         myBtn.setOnClickListener(new OnClickListener() {
 			@Override
@@ -61,13 +82,10 @@ public class MainActivity extends Activity {
 				if (close) {
 					linear.setBackgroundResource(R.drawable.light_on);
 					myBtn.setBackgroundResource(R.drawable.on);
-					startRecording();
-					mhandler.sendEmptyMessage(0);
 					close = false;
 				} else {
 					linear.setBackgroundResource(R.drawable.light_off);
 					myBtn.setBackgroundResource(R.drawable.off);
-					stopRecording();
 					close = true;
 				}
 			}

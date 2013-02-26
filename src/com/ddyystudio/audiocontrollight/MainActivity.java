@@ -1,12 +1,12 @@
 package com.ddyystudio.audiocontrollight;
 
 import java.io.IOException;
-
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.hardware.Camera;
 import android.hardware.Camera.Parameters;
 import android.hardware.Sensor;
@@ -49,7 +49,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 	private ImageView ImgCompass;
 	private SensorManager mSensorManager = null;
 	private float currentDegree = 0f; //指南针图片转过的角度
-	private boolean isRun = true;
+	private boolean isRun = false;
 	private Button buttonAdd;
 	private Button buttonSosOff;
 	private Button buttonSetting;
@@ -113,9 +113,8 @@ public class MainActivity extends Activity implements SensorEventListener {
         
         linear = (RelativeLayout) findViewById(R.id.LinearLayout1);
         setContentView(linear);
-        startRecording();
-		thread.start();
-		camera = Camera.open();
+        
+        thread.start();
 		
 		ImgCompass = (ImageView) findViewById(R.id.imageView1);
 		buttonAdd = (Button) findViewById(R.id.add);
@@ -155,19 +154,27 @@ public class MainActivity extends Activity implements SensorEventListener {
         buttonSosOff.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				
+
 			}
 		});
         buttonSetting.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				
+				isRun = false;
+				Intent intent = new Intent();
+				intent.setClass(MainActivity.this, SettingActivity.class);
+	    		startActivity(intent);
+	    		isClick = false;
+	    		buttonAdd.startAnimation(animRotate(90.0f, 0.5f, 0.45f));
+				buttonSosOff.startAnimation(animTranslate(0.0f, 220.0f, width - 100, height - 100, buttonSosOff, 400));
+				buttonSetting.startAnimation(animTranslate(0.0f, 150.0f, width - 100, height - 100, buttonSetting, 400));
+				buttonCommit.startAnimation(animTranslate(0.0f, 80.0f, width - 100, height - 100, buttonCommit, 400));
 			}
 		});
         buttonCommit.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				
+				Log.e("buttonCommit", "buttonCommit");
 			}
 		});
         myBtn.setOnClickListener(new OnClickListener() {
@@ -246,6 +253,9 @@ public class MainActivity extends Activity implements SensorEventListener {
 	protected void onResume() {
 		Log.e("onResume", "onResume");
 		//注册监听器
+		startRecording();
+		isRun = true;
+		camera = Camera.open();
     	mSensorManager.registerListener(this
     			, mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorManager.SENSOR_DELAY_GAME);
 		super.onResume();

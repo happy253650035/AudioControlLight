@@ -24,6 +24,7 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.Animation.AnimationListener;
+import android.view.animation.AnimationUtils;
 import android.view.animation.RotateAnimation;
 import android.view.animation.TranslateAnimation;
 import android.widget.Button;
@@ -283,7 +284,14 @@ public class MainActivity extends Activity implements SensorEventListener {
 	protected Animation animTranslate(float toX, float toY, final int lastX, final int lastY,
 			final Button button, long durationMillis) {
 		// TODO Auto-generated method stub
-		animationTranslate = new TranslateAnimation(0, toX, 0, toY);				
+		animationTranslate = new TranslateAnimation(0, toX, 0, toY);
+		if (isClick) {
+			animationTranslate.setInterpolator(AnimationUtils.loadInterpolator(this,  
+                    android.R.anim.overshoot_interpolator));
+		}else{
+			animationTranslate.setInterpolator(AnimationUtils.loadInterpolator(this,  
+                    android.R.anim.anticipate_interpolator));
+		}
 		animationTranslate.setAnimationListener(new AnimationListener()
 		{
 						

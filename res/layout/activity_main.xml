@@ -23,15 +23,45 @@
         android:layout_alignParentRight="true"
         android:layout_alignParentTop="true"
         android:src="@drawable/compass" />
-
-    <ImageView
-        android:id="@+id/imageView2"
+    
+    <Button
+        android:id="@+id/sosoff"
         android:layout_width="40dip"
         android:layout_height="40dip"
         android:layout_alignParentBottom="true"
         android:layout_alignParentRight="true"
-        android:layout_marginBottom="24dp"
-        android:layout_marginRight="16dp"
-        android:src="@drawable/x" />
+        android:layout_marginBottom="28dp"
+        android:layout_marginRight="26dp"
+        android:background="@drawable/sos_off" />
+    
+    <Button
+        android:id="@+id/setting"
+        android:layout_width="40dip"
+        android:layout_height="40dip"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:layout_marginBottom="28dp"
+        android:layout_marginRight="26dp"
+        android:background="@drawable/setting" />
+    
+    <Button
+        android:id="@+id/commit"
+        android:layout_width="40dip"
+        android:layout_height="40dip"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:layout_marginBottom="28dp"
+        android:layout_marginRight="26dp"
+        android:background="@drawable/commit" />
+    
+    <Button
+        android:id="@+id/add"
+        android:layout_width="40dip"
+        android:layout_height="40dip"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:layout_marginBottom="28dp"
+        android:layout_marginRight="26dp"
+        android:background="@drawable/plus" />
 
 </RelativeLayout>

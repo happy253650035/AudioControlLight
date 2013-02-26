@@ -6,7 +6,9 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.hardware.Camera;
 import android.hardware.Camera.Parameters;
-import android.hardware.SensorListener;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.media.MediaRecorder;
 import android.os.Bundle;
@@ -14,19 +16,24 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.view.Display;
 import android.view.Menu;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.animation.Animation;
+import android.view.animation.Animation.AnimationListener;
 import android.view.animation.RotateAnimation;
+import android.view.animation.TranslateAnimation;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
+import android.widget.RelativeLayout.LayoutParams;
 
 @SuppressLint("HandlerLeak")
-public class MainActivity extends Activity implements SensorListener {
+public class MainActivity extends Activity implements SensorEventListener {
+	
 	private static final String LOG_TAG = "MainActivity";
 	private RelativeLayout linear;
 	private boolean close = true;
@@ -36,15 +43,23 @@ public class MainActivity extends Activity implements SensorListener {
 	private Camera camera = null;
 	private Parameters parameters = null;
 	private ImageView ImgCompass;
-	private SensorManager sm = null;
-	private RotateAnimation myAni = null;
-	private float DegressQuondam = 0.0f;
+	private SensorManager mSensorManager = null;
+	private float currentDegree = 0f; //指南针图片转过的角度
 	private boolean isRun = true;
+	private Button buttonAdd;
+	private Button buttonSosOff;
+	private Button buttonSetting;
+	private Button buttonCommit;
+	private Animation animationTranslate, animationRotate;
+	private LayoutParams params = new LayoutParams(0, 0);
+	private static Boolean isClick = false;
+	private static int width, height;
+	
 	private Handler mhandler = new Handler(){
 		public void handleMessage(Message msg) { 
     	//操作界面
 //			Log.e("handleMessage", "handleMessage");
-			lightSwitch(close);
+			lightSwitch();
     	super.handleMessage(msg); 
     	} 
     };
@@ -70,6 +85,8 @@ public class MainActivity extends Activity implements SensorListener {
 			}
 		}
 	});
+	
+	
 	@Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -83,6 +100,10 @@ public class MainActivity extends Activity implements SensorListener {
  				WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_main);
         
+        Display display = getWindowManager().getDefaultDisplay(); 
+		height = display.getHeight();  
+		width = display.getWidth();
+        
         mFileName = Environment.getExternalStorageDirectory().getAbsolutePath();
         mFileName += "/audiorecord.3gp";
         
@@ -91,49 +112,89 @@ public class MainActivity extends Activity implements SensorListener {
         startRecording();
 		thread.start();
 		camera = Camera.open();
+		
 		ImgCompass = (ImageView) findViewById(R.id.imageView1);
+		buttonAdd = (Button) findViewById(R.id.add);
+		buttonAdd.setVisibility(View.VISIBLE);
+		buttonSosOff = (Button) findViewById(R.id.sosoff);
+		buttonSosOff.setVisibility(View.INVISIBLE);
+		buttonSetting = (Button) findViewById(R.id.setting);
+		buttonSetting.setVisibility(View.INVISIBLE);
+		buttonCommit = (Button) findViewById(R.id.commit);
+		buttonCommit.setVisibility(View.INVISIBLE);
         myBtn = (Button) findViewById(R.id.button1);
+        
+        buttonAdd.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				if(isClick == false)
+				{
+					isClick = true;
+					buttonSosOff.setVisibility(View.VISIBLE);
+					buttonSetting.setVisibility(View.VISIBLE);
+					buttonCommit.setVisibility(View.VISIBLE);
+					buttonAdd.startAnimation(animRotate(-45.0f, 0.5f, 0.45f));					
+					buttonSosOff.startAnimation(animTranslate(0.0f, -220.0f, width - 100, height - 320, buttonSosOff, 400));
+					buttonSetting.startAnimation(animTranslate(0.0f, -150.0f, width - 100, height - 250, buttonSetting, 400));
+					buttonCommit.startAnimation(animTranslate(0.0f, -80.0f, width - 100, height - 180, buttonCommit, 400));
+				}
+				else
+				{					
+					isClick = false;
+					buttonAdd.startAnimation(animRotate(90.0f, 0.5f, 0.45f));
+					buttonSosOff.startAnimation(animTranslate(0.0f, 220.0f, width - 100, height - 100, buttonSosOff, 400));
+					buttonSetting.startAnimation(animTranslate(0.0f, 150.0f, width - 100, height - 100, buttonSetting, 400));
+					buttonCommit.startAnimation(animTranslate(0.0f, 80.0f, width - 100, height - 100, buttonCommit, 400));
+				}
+			}
+		});
+        buttonSosOff.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				
+			}
+		});
+        buttonSetting.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				
+			}
+		});
+        buttonCommit.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				
+			}
+		});
         myBtn.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View view) {
-				lightSwitch(close);
+				lightSwitch();
 			}
 		});
     }
 	
-	protected void lightSwitch(boolean close) {
+	protected void lightSwitch() {
 		if (close) {
 			linear.setBackgroundResource(R.drawable.light_on);
 			myBtn.setBackgroundResource(R.drawable.on);
 			parameters = camera.getParameters();
 			parameters.setFlashMode(Parameters.FLASH_MODE_TORCH);// 开启
 			camera.setParameters(parameters);
-			this.close = false;
+			close = false;
 		} else {
 			linear.setBackgroundResource(R.drawable.light_off);
 			myBtn.setBackgroundResource(R.drawable.off);
 			parameters.setFlashMode(Parameters.FLASH_MODE_OFF);// 关闭
 			camera.setParameters(parameters);
-			this.close = true;
+			close = true;
 		}
-	}
-	
-	private void AniRotateImage(float fDegress) {
-		myAni = new RotateAnimation(DegressQuondam, fDegress,
-				Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF,
-				0.5f);
-		myAni.setDuration(30);
-		myAni.setFillAfter(true);
-
-		ImgCompass.startAnimation(myAni);
-
-		DegressQuondam = fDegress;
 	}
 
     @Override
 	protected void onStart() {
     	Log.e("onStart", "onStart");
-    	sm = (SensorManager) getSystemService(SENSOR_SERVICE);
+    	mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
     	super.onStart();
 	}
 
@@ -143,21 +204,23 @@ public class MainActivity extends Activity implements SensorListener {
 		isRun = false;
 		stopRecording();
 		camera.release();
+		mSensorManager.unregisterListener(this);
 		super.onPause();
 	}
 
 	@Override
 	protected void onResume() {
 		Log.e("onResume", "onResume");
-		sm.registerListener(this, SensorManager.SENSOR_ORIENTATION
-				 | SensorManager.SENSOR_ACCELEROMETER, SensorManager.SENSOR_DELAY_FASTEST);
+		//注册监听器
+    	mSensorManager.registerListener(this
+    			, mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorManager.SENSOR_DELAY_GAME);
 		super.onResume();
 	}
 
 	@Override
 	protected void onStop() {
 		Log.e("onStop", "onStop");
-		sm.unregisterListener(this);
+		mSensorManager.unregisterListener(this);
 		super.onStop();
 	}
 
@@ -166,23 +229,6 @@ public class MainActivity extends Activity implements SensorListener {
         getMenuInflater().inflate(R.menu.activity_main, menu);
         return true;
     }
-	
-	public void onSensorChanged(int sensor, float[] values) {
-		synchronized (this) {
-			if (sensor == SensorManager.SENSOR_ORIENTATION) {
-				// OrientText.setText("--- NESW ---");
-				if (Math.abs(values[0] - DegressQuondam) < 1)
-					return;
-				if (DegressQuondam != -values[0])
-					AniRotateImage(-values[0]);
-			}
-		}
-	}
-	
-	@Override
-	public void onAccuracyChanged(int sensor, int accuracy) {
-		// TODO Auto-generated method stub
-	}
 	
 	private void startRecording() {
 		mRecorder = new MediaRecorder();
@@ -202,5 +248,102 @@ public class MainActivity extends Activity implements SensorListener {
         mRecorder.stop();
         mRecorder.release();
         mRecorder = null;
+	}
+	
+	protected Animation animRotate(float toDegrees, float pivotXValue, float pivotYValue) {
+		// TODO Auto-generated method stub
+		animationRotate = new RotateAnimation(0, toDegrees, Animation.RELATIVE_TO_SELF, pivotXValue, Animation.RELATIVE_TO_SELF, pivotYValue);
+		animationRotate.setAnimationListener(new AnimationListener() 
+		{
+			
+			@Override
+			public void onAnimationStart(Animation animation) 
+			{
+				// TODO Auto-generated method stub
+				
+			}
+			
+			@Override
+			public void onAnimationRepeat(Animation animation) 
+			{
+				// TODO Auto-generated method stub
+				
+			}
+			
+			@Override
+			public void onAnimationEnd(Animation animation) 
+			{
+				// TODO Auto-generated method stub
+				animationRotate.setFillAfter(true);
+			}
+		});
+		return animationRotate;
+	}
+	
+	protected Animation animTranslate(float toX, float toY, final int lastX, final int lastY,
+			final Button button, long durationMillis) {
+		// TODO Auto-generated method stub
+		animationTranslate = new TranslateAnimation(0, toX, 0, toY);				
+		animationTranslate.setAnimationListener(new AnimationListener()
+		{
+						
+			@Override
+			public void onAnimationStart(Animation animation)
+			{
+				// TODO Auto-generated method stub
+								
+			}
+						
+			@Override
+			public void onAnimationRepeat(Animation animation) 
+			{
+				// TODO Auto-generated method stub
+							
+			}
+						
+			@Override
+			public void onAnimationEnd(Animation animation)
+			{
+				// TODO Auto-generated method stub
+				params = new LayoutParams(0, 0);
+				params.height = 60;
+				params.width = 60;											
+				params.setMargins(lastX, lastY, 0, 0);
+				button.setLayoutParams(params);
+				button.clearAnimation();
+				if (!isClick) {
+					button.setVisibility(View.INVISIBLE);
+				}
+						
+			}
+		});																								
+		animationTranslate.setDuration(durationMillis);
+		return animationTranslate;
+	}
+
+	@Override
+	public void onAccuracyChanged(Sensor sensor, int accuracy) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onSensorChanged(SensorEvent event) {
+		//获取触发event的传感器类型
+				int sensorType = event.sensor.getType();
+				
+				switch(sensorType){
+				case Sensor.TYPE_ORIENTATION:
+					float degree = event.values[0]; //获取z转过的角度
+//					Log.e("获取z转过的角度", ""+degree);
+					//穿件旋转动画
+					RotateAnimation ra = new RotateAnimation(currentDegree,-degree,Animation.RELATIVE_TO_SELF,0.5f
+							,Animation.RELATIVE_TO_SELF,0.5f);
+				 ra.setDuration(100);//动画持续时间
+				 ImgCompass.startAnimation(ra);
+				 currentDegree = -degree;
+				 break;
+				
+				}
 	}
 }

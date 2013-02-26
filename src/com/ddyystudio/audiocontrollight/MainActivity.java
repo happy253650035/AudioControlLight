@@ -39,9 +39,11 @@ public class MainActivity extends Activity implements SensorListener {
 	private SensorManager sm = null;
 	private RotateAnimation myAni = null;
 	private float DegressQuondam = 0.0f;
+	private boolean isRun = true;
 	private Handler mhandler = new Handler(){
 		public void handleMessage(Message msg) { 
     	//²Ù×÷½çÃæ
+//			Log.e("handleMessage", "handleMessage");
 			lightSwitch(close);
     	super.handleMessage(msg); 
     	} 
@@ -52,9 +54,12 @@ public class MainActivity extends Activity implements SensorListener {
 			// TODO Auto-generated method stub
 			long time1 = System.currentTimeMillis();
 			long time2 = time1;
-			while (true) {
+			while (isRun) {
 				time2 = System.currentTimeMillis();
 				if (time2 - time1 > 30) {
+//					float angle = 0;
+//					angle = (float)mRecorder.getMaxAmplitude()/10000;
+//					Log.e("mRecorder", ""+angle);
 					if (mRecorder.getMaxAmplitude() > 10000) {
 						mhandler.sendEmptyMessage(0);
 						time1 = time2 + 600;
@@ -127,12 +132,15 @@ public class MainActivity extends Activity implements SensorListener {
 
     @Override
 	protected void onStart() {
+    	Log.e("onStart", "onStart");
     	sm = (SensorManager) getSystemService(SENSOR_SERVICE);
     	super.onStart();
 	}
 
 	@Override
 	protected void onPause() {
+		Log.e("onPause", "onPause");
+		isRun = false;
 		stopRecording();
 		camera.release();
 		super.onPause();
@@ -140,6 +148,7 @@ public class MainActivity extends Activity implements SensorListener {
 
 	@Override
 	protected void onResume() {
+		Log.e("onResume", "onResume");
 		sm.registerListener(this, SensorManager.SENSOR_ORIENTATION
 				 | SensorManager.SENSOR_ACCELEROMETER, SensorManager.SENSOR_DELAY_FASTEST);
 		super.onResume();
@@ -147,6 +156,7 @@ public class MainActivity extends Activity implements SensorListener {
 
 	@Override
 	protected void onStop() {
+		Log.e("onStop", "onStop");
 		sm.unregisterListener(this);
 		super.onStop();
 	}

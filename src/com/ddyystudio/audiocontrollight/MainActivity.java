@@ -188,29 +188,29 @@ public class MainActivity extends Activity implements SensorEventListener {
 	protected void showAlert(String str,String message,String bt1,String bt2,String bt3) {
 		Dialog alertDialog = new AlertDialog.Builder(this). 
                 setTitle("确定删除？"). 
-                setMessage("您确定删除该条信息吗？"). 
-                setIcon(R.drawable.ic_launcher). 
+                setMessage("您确定删除该条信息吗？").
+                setIcon(R.drawable.ic_launcher).
                 setPositiveButton("确定", new DialogInterface.OnClickListener() { 
                      
                     @Override 
                     public void onClick(DialogInterface dialog, int which) { 
                         // TODO Auto-generated method stub  
                     } 
-                }). 
+                }).
                 setNegativeButton("取消", new DialogInterface.OnClickListener() { 
                      
                     @Override 
                     public void onClick(DialogInterface dialog, int which) { 
                         // TODO Auto-generated method stub  
                     } 
-                }). 
+                }).
                 setNeutralButton("查看详情", new DialogInterface.OnClickListener() { 
                      
                     @Override 
                     public void onClick(DialogInterface dialog, int which) { 
                         // TODO Auto-generated method stub  
                     } 
-                }). 
+                }).
                 create(); 
         alertDialog.show(); 
 	}

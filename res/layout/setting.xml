@@ -5,7 +5,7 @@
     android:background="@drawable/set_bg" >
 
     <ImageView
-        android:id="@+id/imageView1"
+        android:id="@+id/setList"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"
@@ -32,15 +32,15 @@
         android:id="@+id/radio3"
         android:layout_width="50dip"
         android:layout_height="50dip"
-        android:layout_alignBottom="@+id/imageView1"
         android:layout_alignParentLeft="true"
         android:layout_marginBottom="69dp"
         android:background="@drawable/radio_up" />
 
     <ImageView
-        android:id="@+id/imageView2"
+        android:id="@+id/setTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/back"
         android:layout_alignParentLeft="true"
         android:layout_alignParentTop="true"
         android:src="@drawable/set_title" />

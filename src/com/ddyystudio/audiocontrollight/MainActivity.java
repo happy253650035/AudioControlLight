@@ -57,6 +57,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 	private Animation animationTranslate, animationRotate;
 	private LayoutParams params = new LayoutParams(0, 0);
 	private static Boolean isClick = false;
+	private static Boolean isSosOff = true;
 	private static int width, height;
 	
 	private Handler mhandler = new Handler(){
@@ -67,36 +68,15 @@ public class MainActivity extends Activity implements SensorEventListener {
     	super.handleMessage(msg); 
     	} 
     };
-	private Thread thread = new Thread(new Runnable() {
-		@Override
-		public void run() {
-			// TODO Auto-generated method stub
-			long time1 = System.currentTimeMillis();
-			long time2 = time1;
-			while (isRun) {
-				time2 = System.currentTimeMillis();
-				if (time2 - time1 > 30) {
-//					float angle = 0;
-//					angle = (float)mRecorder.getMaxAmplitude()/10000;
-//					Log.e("mRecorder", ""+angle);
-					if (mRecorder.getMaxAmplitude() > 10000) {
-						mhandler.sendEmptyMessage(0);
-						time1 = time2 + 600;
-					}else{
-						time1 = time2;
-					}
-				}
-			}
-		}
-	});
+	private Thread thread = null;
 	
 	
 	@Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
      // 全屏设置，隐藏窗口所有装饰
- 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
- 				WindowManager.LayoutParams.FLAG_FULLSCREEN);
+// 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+// 				WindowManager.LayoutParams.FLAG_FULLSCREEN);
  		requestWindowFeature(Window.FEATURE_NO_TITLE); // 设置屏幕显示无标题，必须启动就要设置好，否则不能再次被设置
  		getWindow().setFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD,
  				WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
@@ -113,8 +93,6 @@ public class MainActivity extends Activity implements SensorEventListener {
         
         linear = (RelativeLayout) findViewById(R.id.LinearLayout1);
         setContentView(linear);
-        
-        thread.start();
 		
 		ImgCompass = (ImageView) findViewById(R.id.imageView1);
 		buttonAdd = (Button) findViewById(R.id.add);
@@ -137,24 +115,30 @@ public class MainActivity extends Activity implements SensorEventListener {
 					buttonSetting.setVisibility(View.VISIBLE);
 					buttonCommit.setVisibility(View.VISIBLE);
 					buttonAdd.startAnimation(animRotate(-45.0f, 0.5f, 0.45f));					
-					buttonSosOff.startAnimation(animTranslate(0.0f, -220.0f, width - 100, height - 320, buttonSosOff, 400));
-					buttonSetting.startAnimation(animTranslate(0.0f, -150.0f, width - 100, height - 250, buttonSetting, 400));
-					buttonCommit.startAnimation(animTranslate(0.0f, -80.0f, width - 100, height - 180, buttonCommit, 400));
+					buttonSosOff.startAnimation(animTranslate(0.0f, -220.0f, width - 100, height - 360, buttonSosOff, 400));
+					buttonSetting.startAnimation(animTranslate(0.0f, -150.0f, width - 100, height - 290, buttonSetting, 400));
+					buttonCommit.startAnimation(animTranslate(0.0f, -80.0f, width - 100, height - 220, buttonCommit, 400));
 				}
 				else
 				{					
 					isClick = false;
 					buttonAdd.startAnimation(animRotate(90.0f, 0.5f, 0.45f));
-					buttonSosOff.startAnimation(animTranslate(0.0f, 220.0f, width - 100, height - 100, buttonSosOff, 400));
-					buttonSetting.startAnimation(animTranslate(0.0f, 150.0f, width - 100, height - 100, buttonSetting, 400));
-					buttonCommit.startAnimation(animTranslate(0.0f, 80.0f, width - 100, height - 100, buttonCommit, 400));
+					buttonSosOff.startAnimation(animTranslate(0.0f, 220.0f, width - 100, height - 140, buttonSosOff, 400));
+					buttonSetting.startAnimation(animTranslate(0.0f, 150.0f, width - 100, height - 140, buttonSetting, 400));
+					buttonCommit.startAnimation(animTranslate(0.0f, 80.0f, width - 100, height - 140, buttonCommit, 400));
 				}
 			}
 		});
         buttonSosOff.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-
+				if (isSosOff) {
+					buttonSosOff.setBackgroundResource(R.drawable.sos_on);
+					isSosOff = false;
+				} else {
+					buttonSosOff.setBackgroundResource(R.drawable.sos_off);
+					isSosOff = true;
+				}
 			}
 		});
         buttonSetting.setOnClickListener(new OnClickListener() {
@@ -166,9 +150,9 @@ public class MainActivity extends Activity implements SensorEventListener {
 	    		startActivity(intent);
 	    		isClick = false;
 	    		buttonAdd.startAnimation(animRotate(90.0f, 0.5f, 0.45f));
-				buttonSosOff.startAnimation(animTranslate(0.0f, 220.0f, width - 100, height - 100, buttonSosOff, 400));
-				buttonSetting.startAnimation(animTranslate(0.0f, 150.0f, width - 100, height - 100, buttonSetting, 400));
-				buttonCommit.startAnimation(animTranslate(0.0f, 80.0f, width - 100, height - 100, buttonCommit, 400));
+	    		buttonSosOff.startAnimation(animTranslate(0.0f, 220.0f, width - 100, height - 140, buttonSosOff, 400));
+				buttonSetting.startAnimation(animTranslate(0.0f, 150.0f, width - 100, height - 140, buttonSetting, 400));
+				buttonCommit.startAnimation(animTranslate(0.0f, 80.0f, width - 100, height - 140, buttonCommit, 400));
 			}
 		});
         buttonCommit.setOnClickListener(new OnClickListener() {
@@ -243,6 +227,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 	protected void onPause() {
 		Log.e("onPause", "onPause");
 		isRun = false;
+		thread = null;
 		stopRecording();
 		camera.release();
 		mSensorManager.unregisterListener(this);
@@ -255,6 +240,31 @@ public class MainActivity extends Activity implements SensorEventListener {
 		//注册监听器
 		startRecording();
 		isRun = true;
+		thread = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				long time1 = System.currentTimeMillis();
+				long time2 = time1;
+				while (isRun) {
+					time2 = System.currentTimeMillis();
+					if (time2 - time1 > 30) {
+//						float angle = 0;
+//						angle = (float)mRecorder.getMaxAmplitude()/10000;
+//						Log.e("mRecorder", ""+angle);
+						if (mRecorder != null) {
+							if (mRecorder.getMaxAmplitude() > 10000) {
+								mhandler.sendEmptyMessage(0);
+								time1 = time2 + 600;
+							}else{
+								time1 = time2;
+							}
+						}
+					}
+				}
+			}
+		});
+		thread.start();
 		camera = Camera.open();
     	mSensorManager.registerListener(this
     			, mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorManager.SENSOR_DELAY_GAME);

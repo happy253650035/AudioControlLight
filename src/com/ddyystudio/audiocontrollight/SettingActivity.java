@@ -1,17 +1,16 @@
 package com.ddyystudio.audiocontrollight;
 
 import android.app.Activity;
-import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.Display;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.Window;
 import android.view.WindowManager;
-import android.view.View.OnClickListener;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.RelativeLayout.LayoutParams;
+
+import com.umeng.analytics.MobclickAgent;
 
 public class SettingActivity extends Activity {
 	private Button mbtBack;
@@ -115,6 +114,7 @@ public class SettingActivity extends Activity {
 		// TODO Auto-generated method stub
 		Log.e("onPauseonPause", "onPauseonPause");
 		super.onPause();
+		MobclickAgent.onPause(this);
 	}
 	@Override
 	protected void onResume() {
@@ -141,5 +141,6 @@ public class SettingActivity extends Activity {
 		}
 		Log.e("onResumeonResume", "onResumeonResume");
 		super.onResume();
+		MobclickAgent.onResume(this);
 	}
 }

@@ -1,6 +1,5 @@
 package com.ddyystudio.audiocontrollight;
 
-import java.io.IOException;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -13,11 +12,10 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.media.MediaRecorder;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.os.Vibrator;
 import android.util.Log;
 import android.view.Display;
 import android.view.Menu;
@@ -35,21 +33,23 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.RelativeLayout.LayoutParams;
 
+import com.umeng.analytics.MobclickAgent;
+
 @SuppressLint("HandlerLeak")
 public class MainActivity extends Activity implements SensorEventListener {
 	
 	private static final String LOG_TAG = "MainActivity";
+	private static final int SENSOR_SHAKE = 10;
+	private static final int SOS_SINGLE = 20;
+	private Vibrator vibrator;
 	private RelativeLayout linear;
 	private boolean close = true;
 	private Button myBtn;
-	private MediaRecorder mRecorder = null;
-	private static String mFileName = null;
 	private Camera camera = null;
 	private Parameters parameters = null;
 	private ImageView ImgCompass;
 	private SensorManager mSensorManager = null;
-	private float currentDegree = 0f; //Ö¸ÄÏÕëÍ¼Æ¬×ª¹ýµÄ½Ç¶È
-	private boolean isRun = false;
+	private float currentDegree = 0f; //æŒ‡å—é’ˆå›¾ç‰‡è½¬è¿‡çš„è§’åº¦
 	private Button buttonAdd;
 	private Button buttonSosOff;
 	private Button buttonSetting;
@@ -59,25 +59,33 @@ public class MainActivity extends Activity implements SensorEventListener {
 	private static Boolean isClick = false;
 	private static Boolean isSosOff = true;
 	private static int width, height;
+	private long time = System.currentTimeMillis();
+	private Thread sosThread;
+	private boolean isRun;
+	private int mosCode;
 	
 	private Handler mhandler = new Handler(){
 		public void handleMessage(Message msg) { 
-    	//²Ù×÷½çÃæ
-//			Log.e("handleMessage", "handleMessage");
-			lightSwitch();
-    	super.handleMessage(msg); 
+    	//æ“ä½œç•Œé¢
+			super.handleMessage(msg); 
+            switch (msg.what) { 
+            case SENSOR_SHAKE: 
+            	lightSwitch();
+                break; 
+            case SOS_SINGLE: 
+            	sosFlash();
+                break; 
+            } 
     	} 
-    };
-	private Thread thread = null;
-	
+    };	
 	
 	@Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-     // È«ÆÁÉèÖÃ£¬Òþ²Ø´°¿ÚËùÓÐ×°ÊÎ
+     // å…¨å±è®¾ç½®ï¼Œéšè—çª—å£æ‰€æœ‰è£…é¥°
 // 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
 // 				WindowManager.LayoutParams.FLAG_FULLSCREEN);
- 		requestWindowFeature(Window.FEATURE_NO_TITLE); // ÉèÖÃÆÁÄ»ÏÔÊ¾ÎÞ±êÌâ£¬±ØÐëÆô¶¯¾ÍÒªÉèÖÃºÃ£¬·ñÔò²»ÄÜÔÙ´Î±»ÉèÖÃ
+ 		requestWindowFeature(Window.FEATURE_NO_TITLE); // è®¾ç½®å±å¹•æ˜¾ç¤ºæ— æ ‡é¢˜ï¼Œå¿…é¡»å¯åŠ¨å°±è¦è®¾ç½®å¥½ï¼Œå¦åˆ™ä¸èƒ½å†æ¬¡è¢«è®¾ç½®
  		getWindow().setFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD,
  				WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
  		getWindow().setFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
@@ -87,10 +95,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         Display display = getWindowManager().getDefaultDisplay(); 
 		height = display.getHeight();  
 		width = display.getWidth();
-        
-        mFileName = Environment.getExternalStorageDirectory().getAbsolutePath();
-        mFileName += "/audiorecord.3gp";
-        
+                
         linear = (RelativeLayout) findViewById(R.id.LinearLayout1);
         setContentView(linear);
 		
@@ -133,18 +138,39 @@ public class MainActivity extends Activity implements SensorEventListener {
 			@Override
 			public void onClick(View v) {
 				if (isSosOff) {
+					mosCode = 0;
 					buttonSosOff.setBackgroundResource(R.drawable.sos_on);
 					isSosOff = false;
+					isRun = true;
+					sosThread = new Thread(new Runnable() {
+						@Override
+						public void run() {
+							long time1 = System.currentTimeMillis();
+							long time2 = time1;
+							// TODO Auto-generated method stub
+							while (isRun) {
+								time2 = System.currentTimeMillis();
+								if (time2 - time1 > 200) {
+									Message msg = new Message(); 
+					                msg.what = SOS_SINGLE; 
+					                mhandler.sendMessage(msg);
+									time1 = time2;
+								}
+							}
+						}
+					});
+					sosThread.start();
 				} else {
 					buttonSosOff.setBackgroundResource(R.drawable.sos_off);
 					isSosOff = true;
+					isRun = false;
+					sosThread = null;
 				}
 			}
 		});
         buttonSetting.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				isRun = false;
 				Intent intent = new Intent();
 				intent.setClass(MainActivity.this, SettingActivity.class);
 	    		startActivity(intent);
@@ -159,6 +185,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 			@Override
 			public void onClick(View v) {
 				Log.e("buttonCommit", "buttonCommit");
+				showAlert("è¯„ä»·", "äº²ï¼Œæ„Ÿè°¢æ‚¨ä½¿ç”¨æˆ‘ä»¬çš„äº§å“ï¼Œå¿«æ¥ç»™æˆ‘ä»¬è¯„ä»·å§ï¼", "ç¡®å®š", "å–æ¶ˆ");
 			}
 		});
         myBtn.setOnClickListener(new OnClickListener() {
@@ -169,33 +196,91 @@ public class MainActivity extends Activity implements SensorEventListener {
 		});
     }
 	
-	protected void showAlert(String str,String message,String bt1,String bt2,String bt3) {
+	public void sosFlash(){
+	    switch (mosCode) {
+	        case 2:
+	        	lightSwitch();
+	            break;
+	        case 4:
+	        	lightSwitch();
+	            break;
+	        case 6:
+	        	lightSwitch();
+	            break;
+	        case 8:
+	        	lightSwitch();
+	            break;
+	        case 10:
+	        	lightSwitch();
+	            break;
+	        case 12:
+	        	lightSwitch();
+	            break;
+	        case 17:
+	        	lightSwitch();
+	            break;
+	        case 21:
+	        	lightSwitch();
+	            break;
+	        case 23:
+	        	lightSwitch();
+	            break;
+	        case 27:
+	        	lightSwitch();
+	            break;
+	        case 29:
+	        	lightSwitch();
+	            break;
+	        case 33:
+	        	lightSwitch();
+	            break;
+	        case 38:
+	        	lightSwitch();
+	            break;
+	        case 40:
+	        	lightSwitch();
+	            break;
+	        case 42:
+	        	lightSwitch();
+	            break;
+	        case 44:
+	        	lightSwitch();
+	            break;
+	        case 46:
+	        	lightSwitch();
+	            break;
+	        case 48:
+	        	lightSwitch();
+	            break;
+	        case 59:
+	            mosCode = -1;
+	            break;
+	            
+	        default:
+	            break;
+	    }
+	    mosCode++;
+	}
+	
+	protected void showAlert(String title,String message,String bt1,String bt2) {
 		Dialog alertDialog = new AlertDialog.Builder(this). 
-                setTitle("È·¶¨É¾³ý£¿"). 
-                setMessage("ÄúÈ·¶¨É¾³ý¸ÃÌõÐÅÏ¢Âð£¿").
+                setTitle(title). 
+                setMessage(message).
                 setIcon(R.drawable.ic_launcher).
-                setPositiveButton("È·¶¨", new DialogInterface.OnClickListener() { 
+                setPositiveButton(bt1, new DialogInterface.OnClickListener() { 
                      
                     @Override 
                     public void onClick(DialogInterface dialog, int which) { 
                         // TODO Auto-generated method stub  
                     } 
                 }).
-                setNegativeButton("È¡Ïû", new DialogInterface.OnClickListener() { 
+                setNegativeButton(bt2, new DialogInterface.OnClickListener() { 
                      
                     @Override 
                     public void onClick(DialogInterface dialog, int which) { 
                         // TODO Auto-generated method stub  
                     } 
-                }).
-                setNeutralButton("²é¿´ÏêÇé", new DialogInterface.OnClickListener() { 
-                     
-                    @Override 
-                    public void onClick(DialogInterface dialog, int which) { 
-                        // TODO Auto-generated method stub  
-                    } 
-                }).
-                create(); 
+                }).create(); 
         alertDialog.show(); 
 	}
 	
@@ -204,13 +289,13 @@ public class MainActivity extends Activity implements SensorEventListener {
 			linear.setBackgroundResource(R.drawable.light_on);
 			myBtn.setBackgroundResource(R.drawable.on);
 			parameters = camera.getParameters();
-			parameters.setFlashMode(Parameters.FLASH_MODE_TORCH);// ¿ªÆô
+			parameters.setFlashMode(Parameters.FLASH_MODE_TORCH);// å¼€å¯
 			camera.setParameters(parameters);
 			close = false;
 		} else {
 			linear.setBackgroundResource(R.drawable.light_off);
 			myBtn.setBackgroundResource(R.drawable.off);
-			parameters.setFlashMode(Parameters.FLASH_MODE_OFF);// ¹Ø±Õ
+			parameters.setFlashMode(Parameters.FLASH_MODE_OFF);// å…³é—­
 			camera.setParameters(parameters);
 			close = true;
 		}
@@ -220,55 +305,30 @@ public class MainActivity extends Activity implements SensorEventListener {
 	protected void onStart() {
     	Log.e("onStart", "onStart");
     	mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+    	vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
     	super.onStart();
 	}
 
 	@Override
 	protected void onPause() {
 		Log.e("onPause", "onPause");
-		isRun = false;
-		thread = null;
-		stopRecording();
 		camera.release();
 		mSensorManager.unregisterListener(this);
 		super.onPause();
+		MobclickAgent.onPause(this);
 	}
 
 	@Override
 	protected void onResume() {
 		Log.e("onResume", "onResume");
-		//×¢²á¼àÌýÆ÷
-		startRecording();
-		isRun = true;
-		thread = new Thread(new Runnable() {
-			@Override
-			public void run() {
-				// TODO Auto-generated method stub
-				long time1 = System.currentTimeMillis();
-				long time2 = time1;
-				while (isRun) {
-					time2 = System.currentTimeMillis();
-					if (time2 - time1 > 30) {
-//						float angle = 0;
-//						angle = (float)mRecorder.getMaxAmplitude()/10000;
-//						Log.e("mRecorder", ""+angle);
-						if (mRecorder != null) {
-							if (mRecorder.getMaxAmplitude() > 10000) {
-								mhandler.sendEmptyMessage(0);
-								time1 = time2 + 600;
-							}else{
-								time1 = time2;
-							}
-						}
-					}
-				}
-			}
-		});
-		thread.start();
+		//æ³¨å†Œç›‘å¬å™¨
 		camera = Camera.open();
     	mSensorManager.registerListener(this
     			, mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorManager.SENSOR_DELAY_GAME);
+    	mSensorManager.registerListener(this
+    			, mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL);
 		super.onResume();
+		MobclickAgent.onResume(this);
 	}
 
 	@Override
@@ -283,26 +343,6 @@ public class MainActivity extends Activity implements SensorEventListener {
         getMenuInflater().inflate(R.menu.activity_main, menu);
         return true;
     }
-	
-	private void startRecording() {
-		mRecorder = new MediaRecorder();
-        mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-        mRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
-        mRecorder.setOutputFile(mFileName);
-        mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
-        try {
-            mRecorder.prepare();
-        } catch (IOException e) {
-            Log.e(LOG_TAG, "prepare() failed");
-        }
-        mRecorder.start();
-	}
-	
-	private void stopRecording() {
-        mRecorder.stop();
-        mRecorder.release();
-        mRecorder = null;
-	}
 	
 	protected Animation animRotate(float toDegrees, float pivotXValue, float pivotYValue) {
 		// TODO Auto-generated method stub
@@ -390,20 +430,38 @@ public class MainActivity extends Activity implements SensorEventListener {
 
 	@Override
 	public void onSensorChanged(SensorEvent event) {
-		//»ñÈ¡´¥·¢eventµÄ´«¸ÐÆ÷ÀàÐÍ
+		//èŽ·å–è§¦å‘eventçš„ä¼ æ„Ÿå™¨ç±»åž‹
 				int sensorType = event.sensor.getType();
 				
 				switch(sensorType){
 				case Sensor.TYPE_ORIENTATION:
-					float degree = event.values[0]; //»ñÈ¡z×ª¹ýµÄ½Ç¶È
-//					Log.e("»ñÈ¡z×ª¹ýµÄ½Ç¶È", ""+degree);
-					//´©¼þÐý×ª¶¯»­
-					RotateAnimation ra = new RotateAnimation(currentDegree,-degree,Animation.RELATIVE_TO_SELF,0.5f
-							,Animation.RELATIVE_TO_SELF,0.5f);
-				 ra.setDuration(100);//¶¯»­³ÖÐøÊ±¼ä
-				 ImgCompass.startAnimation(ra);
-				 currentDegree = -degree;
-				 break;
+					float degree = event.values[0]; //èŽ·å–zè½¬è¿‡çš„è§’åº¦
+//					Log.e("èŽ·å–zè½¬è¿‡çš„è§’åº¦", ""+degree);
+					//ç©¿ä»¶æ—‹è½¬åŠ¨ç”»
+					RotateAnimation ra = new RotateAnimation(currentDegree,-degree,Animation.RELATIVE_TO_SELF,0.5f,Animation.RELATIVE_TO_SELF,0.5f);
+					ra.setDuration(100);//åŠ¨ç”»æŒç»­æ—¶é—´
+					ImgCompass.startAnimation(ra);
+					currentDegree = -degree;
+					break;
+				case Sensor.TYPE_ACCELEROMETER:
+					// ä¼ æ„Ÿå™¨ä¿¡æ¯æ”¹å˜æ—¶æ‰§è¡Œè¯¥æ–¹æ³• 
+		            float[] values = event.values; 
+		            float x = values[0]; // xè½´æ–¹å‘çš„é‡åŠ›åŠ é€Ÿåº¦ï¼Œå‘å³ä¸ºæ­£ 
+		            float y = values[1]; // yè½´æ–¹å‘çš„é‡åŠ›åŠ é€Ÿåº¦ï¼Œå‘å‰ä¸ºæ­£ 
+		            float z = values[2]; // zè½´æ–¹å‘çš„é‡åŠ›åŠ é€Ÿåº¦ï¼Œå‘ä¸Šä¸ºæ­£ 
+//		            Log.i(LOG_TAG, "xè½´æ–¹å‘çš„é‡åŠ›åŠ é€Ÿåº¦" + x +  "ï¼›yè½´æ–¹å‘çš„é‡åŠ›åŠ é€Ÿåº¦" + y +  "ï¼›zè½´æ–¹å‘çš„é‡åŠ›åŠ é€Ÿåº¦" + z); 
+		            // ä¸€èˆ¬åœ¨è¿™ä¸‰ä¸ªæ–¹å‘çš„é‡åŠ›åŠ é€Ÿåº¦è¾¾åˆ°40å°±è¾¾åˆ°äº†æ‘‡æ™ƒæ‰‹æœºçš„çŠ¶æ€ã€‚ 
+		            int medumValue = 19;// ä¸‰æ˜Ÿ i9250æ€Žä¹ˆæ™ƒéƒ½ä¸ä¼šè¶…è¿‡20ï¼Œæ²¡åŠžæ³•ï¼Œåªè®¾ç½®19äº† 
+		            if (Math.abs(x) > medumValue || Math.abs(y) > medumValue || Math.abs(z) > medumValue) {
+		            	if (System.currentTimeMillis()-time > 1000) {
+		            		vibrator.vibrate(200); 
+			                Message msg = new Message(); 
+			                msg.what = SENSOR_SHAKE; 
+			                mhandler.sendMessage(msg);
+						}
+		            	time = System.currentTimeMillis(); 
+		            }
+					break;
 				
 				}
 	}

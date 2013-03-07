@@ -6,6 +6,8 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.hardware.Camera;
 import android.hardware.Camera.Parameters;
 import android.hardware.Sensor;
@@ -19,6 +21,7 @@ import android.os.Vibrator;
 import android.util.Log;
 import android.view.Display;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.Window;
@@ -30,13 +33,19 @@ import android.view.animation.RotateAnimation;
 import android.view.animation.TranslateAnimation;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.RelativeLayout.LayoutParams;
-
+import com.adsmogo.offers.MogoOffer;
+import com.adsmogo.offers.MogoOfferPointCallBack;
+import com.mobisage.android.MobiSageAdBanner;
+import com.mobisage.android.MobiSageAnimeType;
+import com.mobisage.android.MobiSageEnviroment;
 import com.umeng.analytics.MobclickAgent;
 
 @SuppressLint("HandlerLeak")
-public class MainActivity extends Activity implements SensorEventListener {
+public class MainActivity extends Activity implements SensorEventListener,MogoOfferPointCallBack {
 	
 	private static final String LOG_TAG = "MainActivity";
 	private static final int SENSOR_SHAKE = 10;
@@ -54,6 +63,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 	private Button buttonSosOff;
 	private Button buttonSetting;
 	private Button buttonCommit;
+	private Button buttonRecommend;
 	private Animation animationTranslate, animationRotate;
 	private LayoutParams params = new LayoutParams(0, 0);
 	private static Boolean isClick = false;
@@ -63,6 +73,11 @@ public class MainActivity extends Activity implements SensorEventListener {
 	private Thread sosThread;
 	private boolean isRun;
 	private int mosCode;
+	private SharedPreferences mData;
+	private MobiSageAdBanner adver = null;
+	public static String mogoID = "5f5c80ed16474fe29c6d7b9b6ac722dc";
+	Activity activity;
+	private TextView showPointTxt;
 	
 	private Handler mhandler = new Handler(){
 		public void handleMessage(Message msg) { 
@@ -70,7 +85,10 @@ public class MainActivity extends Activity implements SensorEventListener {
 			super.handleMessage(msg); 
             switch (msg.what) { 
             case SENSOR_SHAKE: 
-            	lightSwitch();
+            	if (SettingActivity.audioMode != 3) {
+            		vibrator.vibrate(200); 
+            		lightSwitch();
+				}
                 break; 
             case SOS_SINGLE: 
             	sosFlash();
@@ -81,6 +99,9 @@ public class MainActivity extends Activity implements SensorEventListener {
 	
 	@Override
     public void onCreate(Bundle savedInstanceState) {
+		Log.e("onCreate", "onCreate");
+		mData = getSharedPreferences("SP", MODE_PRIVATE);
+		SettingActivity.audioMode = mData.getInt("audioMode", 1);
         super.onCreate(savedInstanceState);
      // 全屏设置，隐藏窗口所有装饰
 // 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
@@ -91,6 +112,21 @@ public class MainActivity extends Activity implements SensorEventListener {
  		getWindow().setFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
  				WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_main);
+        
+        //广告条
+        LinearLayout ad_container = (LinearLayout) findViewById(R.id.ad_container) ;
+        adver = new MobiSageAdBanner(this,"9cdf8f4316f14a53876a856b5d359e9e",null,null); 
+        adver.setAdRefreshInterval(MobiSageEnviroment.AdRefreshInterval.Ad_Refresh_15); 
+        adver.setAnimeType(MobiSageAnimeType.Anime_Random); 
+        ad_container.addView(adver);
+        
+        //芒果积分墙
+        MogoOffer.init(this, mogoID);
+		MogoOffer.addPointCallBack(this);
+		MogoOffer.setOfferListTitle("获取金币");
+		MogoOffer.setOfferEntranceMsg("商城");
+		MogoOffer.setMogoOfferScoreVisible(false);
+		showPointTxt = (TextView) findViewById(R.id.show_points_txt);
         
         Display display = getWindowManager().getDefaultDisplay(); 
 		height = display.getHeight();  
@@ -109,6 +145,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 		buttonCommit = (Button) findViewById(R.id.commit);
 		buttonCommit.setVisibility(View.INVISIBLE);
         myBtn = (Button) findViewById(R.id.button1);
+        buttonRecommend = (Button) findViewById(R.id.recommend);
         
         buttonAdd.setOnClickListener(new OnClickListener() {
 			@Override
@@ -194,8 +231,30 @@ public class MainActivity extends Activity implements SensorEventListener {
 				lightSwitch();
 			}
 		});
+        buttonRecommend.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				// TODO Auto-generated method stub
+				MogoOffer.showOffer(activity);
+//				MogoOffer.addPoints(activity, 20);
+			}
+		});
+        if (SettingActivity.audioMode == 2) {
+        	camera = Camera.open();
+        	lightSwitch();
+		}
     }
 	
+	@Override
+	protected void onDestroy() {
+		// TODO Auto-generated method stub
+		MogoOffer.clear(this);
+		super.onDestroy();
+		if(adver != null){
+			adver.destoryAdView();//销毁广告
+			adver = null; }
+	}
+
 	public void sosFlash(){
 	    switch (mosCode) {
 	        case 2:
@@ -298,6 +357,11 @@ public class MainActivity extends Activity implements SensorEventListener {
 			parameters.setFlashMode(Parameters.FLASH_MODE_OFF);// 关闭
 			camera.setParameters(parameters);
 			close = true;
+			if (SettingActivity.audioMode == 2) {
+				isRun = false;
+				sosThread = null;
+				finish();
+			}
 		}
 	}
 
@@ -312,7 +376,15 @@ public class MainActivity extends Activity implements SensorEventListener {
 	@Override
 	protected void onPause() {
 		Log.e("onPause", "onPause");
+		if (!close) {
+			linear.setBackgroundResource(R.drawable.light_off);
+			myBtn.setBackgroundResource(R.drawable.off);
+			parameters.setFlashMode(Parameters.FLASH_MODE_OFF);// 关闭
+			camera.setParameters(parameters);
+			close = true;
+		}
 		camera.release();
+		camera = null;
 		mSensorManager.unregisterListener(this);
 		super.onPause();
 		MobclickAgent.onPause(this);
@@ -322,25 +394,42 @@ public class MainActivity extends Activity implements SensorEventListener {
 	protected void onResume() {
 		Log.e("onResume", "onResume");
 		//注册监听器
-		camera = Camera.open();
+		if (camera == null) {
+			camera = Camera.open();
+		}
     	mSensorManager.registerListener(this
     			, mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorManager.SENSOR_DELAY_GAME);
     	mSensorManager.registerListener(this
     			, mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL);
 		super.onResume();
 		MobclickAgent.onResume(this);
+		MogoOffer.RefreshPoints(this);
 	}
 
 	@Override
 	protected void onStop() {
 		Log.e("onStop", "onStop");
 		mSensorManager.unregisterListener(this);
+		//存入数据
+        Editor editor = mData.edit();
+        editor.putInt("audioMode", SettingActivity.audioMode);
+        editor.commit();
+        
 		super.onStop();
 	}
 
 	@Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.activity_main, menu);
+        return true;
+    }
+	
+	@Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        super.onOptionsItemSelected(item);
+        Intent intent = new Intent();
+		intent.setClass(MainActivity.this, SettingActivity.class);
+		startActivity(intent);
         return true;
     }
 	
@@ -454,7 +543,6 @@ public class MainActivity extends Activity implements SensorEventListener {
 		            int medumValue = 19;// 三星 i9250怎么晃都不会超过20，没办法，只设置19了 
 		            if (Math.abs(x) > medumValue || Math.abs(y) > medumValue || Math.abs(z) > medumValue) {
 		            	if (System.currentTimeMillis()-time > 1000) {
-		            		vibrator.vibrate(200); 
 			                Message msg = new Message(); 
 			                msg.what = SENSOR_SHAKE; 
 			                mhandler.sendMessage(msg);
@@ -464,5 +552,11 @@ public class MainActivity extends Activity implements SensorEventListener {
 					break;
 				
 				}
+	}
+
+	@Override
+	public void updatePoint(long point) {
+		// TODO Auto-generated method stub
+		showPointTxt.setText("当前积分为:" + point);
 	}
 }

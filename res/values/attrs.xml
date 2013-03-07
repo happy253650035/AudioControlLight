@@ -1,0 +1,8 @@
+<resources>
+    <declare-styleable name="com.mobisage.android.MobiSageAdView">
+        <attr name="adsize" format="integer"/>
+        <attr name="keyword" format="string"/>
+        <attr name="customdata" format="string"/>
+        <attr name="publisherID" format="string"/>
+    </declare-styleable>
+</resources>

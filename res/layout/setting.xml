@@ -49,7 +49,6 @@
         android:id="@+id/back"
         android:layout_width="60dip"
         android:layout_height="60dip"
-        android:layout_above="@+id/Button1"
         android:layout_alignParentLeft="true"
         android:background="@drawable/back" />
 

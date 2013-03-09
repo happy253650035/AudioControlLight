@@ -35,18 +35,26 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
-import android.widget.TextView;
 import android.widget.RelativeLayout.LayoutParams;
-import com.adsmogo.offers.MogoOffer;
-import com.adsmogo.offers.MogoOfferPointCallBack;
+import android.widget.TextView;
+import android.widget.Toast;
+
 import com.mobisage.android.MobiSageAdBanner;
 import com.mobisage.android.MobiSageAnimeType;
 import com.mobisage.android.MobiSageEnviroment;
+import com.nd.dianjin.DianJinPlatform;
+import com.nd.dianjin.DianJinPlatform.OfferWallStyle;
+import com.nd.dianjin.listener.AppActivatedListener;
+import com.nd.dianjin.listener.OfferWallStateListener;
+import com.nd.dianjin.webservice.WebServiceListener;
 import com.umeng.analytics.MobclickAgent;
 
 @SuppressLint("HandlerLeak")
-public class MainActivity extends Activity implements SensorEventListener,MogoOfferPointCallBack {
-	
+public class MainActivity extends Activity implements SensorEventListener/*
+																		 * ,
+																		 * MogoOfferPointCallBack
+																		 */{
+
 	private static final String LOG_TAG = "MainActivity";
 	private static final int SENSOR_SHAKE = 10;
 	private static final int SOS_SINGLE = 20;
@@ -58,7 +66,7 @@ public class MainActivity extends Activity implements SensorEventListener,MogoOf
 	private Parameters parameters = null;
 	private ImageView ImgCompass;
 	private SensorManager mSensorManager = null;
-	private float currentDegree = 0f; //指南针图片转过的角度
+	private float currentDegree = 0f; // 指南针图片转过的角度
 	private Button buttonAdd;
 	private Button buttonSosOff;
 	private Button buttonSetting;
@@ -78,63 +86,163 @@ public class MainActivity extends Activity implements SensorEventListener,MogoOf
 	public static String mogoID = "5f5c80ed16474fe29c6d7b9b6ac722dc";
 	Activity activity;
 	private TextView showPointTxt;
-	
-	private Handler mhandler = new Handler(){
-		public void handleMessage(Message msg) { 
-    	//操作界面
-			super.handleMessage(msg); 
-            switch (msg.what) { 
-            case SENSOR_SHAKE: 
-            	if (SettingActivity.audioMode != 3) {
-            		vibrator.vibrate(200); 
-            		lightSwitch();
+	private float score;
+	boolean hasAdvBar = true;
+
+	private Handler mhandler = new Handler() {
+		public void handleMessage(Message msg) {
+			// 操作界面
+			super.handleMessage(msg);
+			switch (msg.what) {
+			case SENSOR_SHAKE:
+				if (SettingActivity.audioMode != 3) {
+					vibrator.vibrate(200);
+					lightSwitch();
 				}
-                break; 
-            case SOS_SINGLE: 
-            	sosFlash();
-                break; 
-            } 
-    	} 
-    };	
-	
+				break;
+			case SOS_SINGLE:
+				sosFlash();
+				break;
+			}
+		}
+	};
+
 	@Override
-    public void onCreate(Bundle savedInstanceState) {
+	public void onCreate(Bundle savedInstanceState) {
 		Log.e("onCreate", "onCreate");
 		mData = getSharedPreferences("SP", MODE_PRIVATE);
 		SettingActivity.audioMode = mData.getInt("audioMode", 1);
-        super.onCreate(savedInstanceState);
-     // 全屏设置，隐藏窗口所有装饰
-// 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
-// 				WindowManager.LayoutParams.FLAG_FULLSCREEN);
- 		requestWindowFeature(Window.FEATURE_NO_TITLE); // 设置屏幕显示无标题，必须启动就要设置好，否则不能再次被设置
- 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD,
- 				WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
- 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
- 				WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        setContentView(R.layout.activity_main);
-        
-        //广告条
-        LinearLayout ad_container = (LinearLayout) findViewById(R.id.ad_container) ;
-        adver = new MobiSageAdBanner(this,"9cdf8f4316f14a53876a856b5d359e9e",null,null); 
-        adver.setAdRefreshInterval(MobiSageEnviroment.AdRefreshInterval.Ad_Refresh_15); 
-        adver.setAnimeType(MobiSageAnimeType.Anime_Random); 
-        ad_container.addView(adver);
-        
-        //芒果积分墙
-        MogoOffer.init(this, mogoID);
-		MogoOffer.addPointCallBack(this);
-		MogoOffer.setOfferListTitle("获取金币");
-		MogoOffer.setOfferEntranceMsg("商城");
-		MogoOffer.setMogoOfferScoreVisible(false);
+		hasAdvBar = mData.getBoolean("hasAdvBar", true);
+		super.onCreate(savedInstanceState);
+		// 全屏设置，隐藏窗口所有装饰
+		// getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+		// WindowManager.LayoutParams.FLAG_FULLSCREEN);
+		requestWindowFeature(Window.FEATURE_NO_TITLE); // 设置屏幕显示无标题，必须启动就要设置好，否则不能再次被设置
+		getWindow().setFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD,
+				WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
+		getWindow().setFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
+				WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+		setContentView(R.layout.activity_main);
+		// 显示积分
 		showPointTxt = (TextView) findViewById(R.id.show_points_txt);
-        
-        Display display = getWindowManager().getDefaultDisplay(); 
-		height = display.getHeight();  
+		if (!hasAdvBar) {
+			showPointTxt.setVisibility(View.INVISIBLE);
+		}
+
+		// 广告条
+		LinearLayout ad_container = (LinearLayout) findViewById(R.id.ad_container);
+		adver = new MobiSageAdBanner(this, "9cdf8f4316f14a53876a856b5d359e9e",
+				null, null);
+		adver.setAdRefreshInterval(MobiSageEnviroment.AdRefreshInterval.Ad_Refresh_15);
+		adver.setAnimeType(MobiSageAnimeType.Anime_Random);
+		if (hasAdvBar) {
+			ad_container.addView(adver);
+		}
+
+		// 芒果积分墙
+		/*
+		 * MogoOffer.init(this, mogoID); MogoOffer.addPointCallBack(this);
+		 * MogoOffer.setOfferListTitle("获取金币");
+		 * MogoOffer.setOfferEntranceMsg("商城");
+		 * MogoOffer.setMogoOfferScoreVisible(false);
+		 */
+		/* * 初始化广告 */
+		DianJinPlatform.initialize(this, 23604,
+				"066f13a97b715961460b91d6ff8a31a3");
+		/*
+		 * 应用安装激活获取奖励接口,如果不需要这个功能可以去掉
+		 */
+		DianJinPlatform.setAppActivatedListener(new AppActivatedListener() {
+			@Override
+			public void onAppActivatedResponse(int responseCode, Float money) {
+				switch (responseCode) {
+				case DianJinPlatform.APP_ACTIVATED_SUCESS:
+					Toast.makeText(MainActivity.this,
+							"奖励M币:" + String.valueOf(money), Toast.LENGTH_SHORT)
+							.show();
+					break;
+				case DianJinPlatform.APP_ACTIVATED_ERROR:
+					Toast.makeText(MainActivity.this, "奖励M币:0",
+							Toast.LENGTH_SHORT).show();
+					break;
+				default:
+					Toast.makeText(MainActivity.this, "奖励M币:ERROR",
+							Toast.LENGTH_SHORT).show();
+					break;
+				}
+			}
+		});
+		/* * 监听推广墙状态接口 */
+
+		DianJinPlatform.setOfferWallStateListener(new OfferWallStateListener() {
+			@Override
+			public void onOfferWallState(int code) {
+				switch (code) {
+				case DianJinPlatform.DIANJIN_OFFERWALL_START:
+					Toast.makeText(MainActivity.this, "推广墙开始",
+							Toast.LENGTH_SHORT).show();
+					break;
+				case DianJinPlatform.DIANJIN_OFFERWALL_DESTROY:
+					Toast.makeText(MainActivity.this, "推广墙结束",
+							Toast.LENGTH_SHORT).show();
+					/* * 查询余额接口 */
+					DianJinPlatform.getBalance(MainActivity.this,
+							new WebServiceListener<Float>() {
+								@Override
+								public void onResponse(int responseCode, Float t) {
+									switch (responseCode) {
+									case DianJinPlatform.DIANJIN_SUCCESS:
+										showPointTxt.setText("当前积分为:" + t);
+										score = t;
+										break;
+									case DianJinPlatform.DIANJIN_ERROR:
+										Toast.makeText(MainActivity.this,
+												"获取余额失败", Toast.LENGTH_SHORT)
+												.show();
+										break;
+									default:
+										Toast.makeText(MainActivity.this,
+												"未知错误，错误码为:" + responseCode,
+												Toast.LENGTH_SHORT).show();
+									}
+								}
+							});
+					break;
+				default:
+					break;
+				}
+			}
+		});
+		// 进入应用时先进行一遍积分查询
+		/* * 查询余额接口 */
+		DianJinPlatform.getBalance(MainActivity.this,
+				new WebServiceListener<Float>() {
+					@Override
+					public void onResponse(int responseCode, Float t) {
+						switch (responseCode) {
+						case DianJinPlatform.DIANJIN_SUCCESS:
+							showPointTxt.setText("当前积分为:" + t);
+							score = t;
+							break;
+						case DianJinPlatform.DIANJIN_ERROR:
+							Toast.makeText(MainActivity.this, "获取余额失败",
+									Toast.LENGTH_SHORT).show();
+							break;
+						default:
+							Toast.makeText(MainActivity.this,
+									"未知错误，错误码为:" + responseCode,
+									Toast.LENGTH_SHORT).show();
+						}
+					}
+				});
+
+		Display display = getWindowManager().getDefaultDisplay();
+		height = display.getHeight();
 		width = display.getWidth();
-                
-        linear = (RelativeLayout) findViewById(R.id.LinearLayout1);
-        setContentView(linear);
-		
+
+		linear = (RelativeLayout) findViewById(R.id.LinearLayout1);
+		setContentView(linear);
+
 		ImgCompass = (ImageView) findViewById(R.id.imageView1);
 		buttonAdd = (Button) findViewById(R.id.add);
 		buttonAdd.setVisibility(View.VISIBLE);
@@ -144,34 +252,37 @@ public class MainActivity extends Activity implements SensorEventListener,MogoOf
 		buttonSetting.setVisibility(View.INVISIBLE);
 		buttonCommit = (Button) findViewById(R.id.commit);
 		buttonCommit.setVisibility(View.INVISIBLE);
-        myBtn = (Button) findViewById(R.id.button1);
-        buttonRecommend = (Button) findViewById(R.id.recommend);
-        
-        buttonAdd.setOnClickListener(new OnClickListener() {
+		myBtn = (Button) findViewById(R.id.button1);
+		buttonRecommend = (Button) findViewById(R.id.recommend);
+
+		buttonAdd.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				if(isClick == false)
-				{
+				if (isClick == false) {
 					isClick = true;
 					buttonSosOff.setVisibility(View.VISIBLE);
 					buttonSetting.setVisibility(View.VISIBLE);
 					buttonCommit.setVisibility(View.VISIBLE);
-					buttonAdd.startAnimation(animRotate(-45.0f, 0.5f, 0.45f));					
-					buttonSosOff.startAnimation(animTranslate(0.0f, -220.0f, width - 100, height - 360, buttonSosOff, 400));
-					buttonSetting.startAnimation(animTranslate(0.0f, -150.0f, width - 100, height - 290, buttonSetting, 400));
-					buttonCommit.startAnimation(animTranslate(0.0f, -80.0f, width - 100, height - 220, buttonCommit, 400));
-				}
-				else
-				{					
+					buttonAdd.startAnimation(animRotate(-45.0f, 0.5f, 0.45f));
+					buttonSosOff.startAnimation(animTranslate(0.0f, -220.0f,
+							width - 100, height - 360, buttonSosOff, 400));
+					buttonSetting.startAnimation(animTranslate(0.0f, -150.0f,
+							width - 100, height - 290, buttonSetting, 400));
+					buttonCommit.startAnimation(animTranslate(0.0f, -80.0f,
+							width - 100, height - 220, buttonCommit, 400));
+				} else {
 					isClick = false;
 					buttonAdd.startAnimation(animRotate(90.0f, 0.5f, 0.45f));
-					buttonSosOff.startAnimation(animTranslate(0.0f, 220.0f, width - 100, height - 140, buttonSosOff, 400));
-					buttonSetting.startAnimation(animTranslate(0.0f, 150.0f, width - 100, height - 140, buttonSetting, 400));
-					buttonCommit.startAnimation(animTranslate(0.0f, 80.0f, width - 100, height - 140, buttonCommit, 400));
+					buttonSosOff.startAnimation(animTranslate(0.0f, 220.0f,
+							width - 100, height - 140, buttonSosOff, 400));
+					buttonSetting.startAnimation(animTranslate(0.0f, 150.0f,
+							width - 100, height - 140, buttonSetting, 400));
+					buttonCommit.startAnimation(animTranslate(0.0f, 80.0f,
+							width - 100, height - 140, buttonCommit, 400));
 				}
 			}
 		});
-        buttonSosOff.setOnClickListener(new OnClickListener() {
+		buttonSosOff.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				if (isSosOff) {
@@ -188,9 +299,9 @@ public class MainActivity extends Activity implements SensorEventListener,MogoOf
 							while (isRun) {
 								time2 = System.currentTimeMillis();
 								if (time2 - time1 > 200) {
-									Message msg = new Message(); 
-					                msg.what = SOS_SINGLE; 
-					                mhandler.sendMessage(msg);
+									Message msg = new Message();
+									msg.what = SOS_SINGLE;
+									mhandler.sendMessage(msg);
 									time1 = time2;
 								}
 							}
@@ -205,144 +316,168 @@ public class MainActivity extends Activity implements SensorEventListener,MogoOf
 				}
 			}
 		});
-        buttonSetting.setOnClickListener(new OnClickListener() {
+		buttonSetting.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				Intent intent = new Intent();
 				intent.setClass(MainActivity.this, SettingActivity.class);
-	    		startActivity(intent);
-	    		isClick = false;
-	    		buttonAdd.startAnimation(animRotate(90.0f, 0.5f, 0.45f));
-	    		buttonSosOff.startAnimation(animTranslate(0.0f, 220.0f, width - 100, height - 140, buttonSosOff, 400));
-				buttonSetting.startAnimation(animTranslate(0.0f, 150.0f, width - 100, height - 140, buttonSetting, 400));
-				buttonCommit.startAnimation(animTranslate(0.0f, 80.0f, width - 100, height - 140, buttonCommit, 400));
+				startActivity(intent);
+				isClick = false;
+				buttonAdd.startAnimation(animRotate(90.0f, 0.5f, 0.45f));
+				buttonSosOff.startAnimation(animTranslate(0.0f, 220.0f,
+						width - 100, height - 140, buttonSosOff, 400));
+				buttonSetting.startAnimation(animTranslate(0.0f, 150.0f,
+						width - 100, height - 140, buttonSetting, 400));
+				buttonCommit.startAnimation(animTranslate(0.0f, 80.0f,
+						width - 100, height - 140, buttonCommit, 400));
 			}
 		});
-        buttonCommit.setOnClickListener(new OnClickListener() {
+		buttonCommit.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				Log.e("buttonCommit", "buttonCommit");
-				showAlert("评价", "亲，感谢您使用我们的产品，快来给我们评价吧！", "确定", "取消");
+				if (hasAdvBar) {
+					if (score >= 100) {
+						showAlert("去除广告", "亲，确定要消耗100积分去除广告吗？", "确定", "取消");
+					}else{
+						showAlert("去除广告", "亲，当您的积分达到100分时就可以去除广告哦！", "确定", "取消");
+					}
+				}else{
+					showAlert("感谢", "亲，感谢您对我们应用的使用！", "确定", "取消");
+				}
 			}
 		});
-        myBtn.setOnClickListener(new OnClickListener() {
+		myBtn.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View view) {
 				lightSwitch();
 			}
 		});
-        buttonRecommend.setOnClickListener(new OnClickListener() {
+		buttonRecommend.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				// TODO Auto-generated method stub
-				MogoOffer.showOffer(activity);
-//				MogoOffer.addPoints(activity, 20);
+				// MogoOffer.showOffer(activity);
+				// MogoOffer.addPoints(activity, 20);
+				// 显示推广墙接口 OfferWallStyle.BLUE为可选参数
+				DianJinPlatform
+						.showOfferWall(MainActivity.this,
+								DianJinPlatform.Oriention.SENSOR,
+								OfferWallStyle.ORANGE);
 			}
 		});
-        if (SettingActivity.audioMode == 2) {
-        	camera = Camera.open();
-        	lightSwitch();
+		if (SettingActivity.audioMode == 2) {
+			camera = Camera.open();
+			lightSwitch();
 		}
-    }
-	
+	}
+
 	@Override
 	protected void onDestroy() {
 		// TODO Auto-generated method stub
-		MogoOffer.clear(this);
+		// MogoOffer.clear(this);
+		DianJinPlatform.destroy();
 		super.onDestroy();
-		if(adver != null){
-			adver.destoryAdView();//销毁广告
-			adver = null; }
+		if (adver != null) {
+			adver.destoryAdView();// 销毁广告
+			adver = null;
+		}
 	}
 
-	public void sosFlash(){
-	    switch (mosCode) {
-	        case 2:
-	        	lightSwitch();
-	            break;
-	        case 4:
-	        	lightSwitch();
-	            break;
-	        case 6:
-	        	lightSwitch();
-	            break;
-	        case 8:
-	        	lightSwitch();
-	            break;
-	        case 10:
-	        	lightSwitch();
-	            break;
-	        case 12:
-	        	lightSwitch();
-	            break;
-	        case 17:
-	        	lightSwitch();
-	            break;
-	        case 21:
-	        	lightSwitch();
-	            break;
-	        case 23:
-	        	lightSwitch();
-	            break;
-	        case 27:
-	        	lightSwitch();
-	            break;
-	        case 29:
-	        	lightSwitch();
-	            break;
-	        case 33:
-	        	lightSwitch();
-	            break;
-	        case 38:
-	        	lightSwitch();
-	            break;
-	        case 40:
-	        	lightSwitch();
-	            break;
-	        case 42:
-	        	lightSwitch();
-	            break;
-	        case 44:
-	        	lightSwitch();
-	            break;
-	        case 46:
-	        	lightSwitch();
-	            break;
-	        case 48:
-	        	lightSwitch();
-	            break;
-	        case 59:
-	            mosCode = -1;
-	            break;
-	            
-	        default:
-	            break;
-	    }
-	    mosCode++;
+	public void sosFlash() {
+		switch (mosCode) {
+		case 2:
+			lightSwitch();
+			break;
+		case 4:
+			lightSwitch();
+			break;
+		case 6:
+			lightSwitch();
+			break;
+		case 8:
+			lightSwitch();
+			break;
+		case 10:
+			lightSwitch();
+			break;
+		case 12:
+			lightSwitch();
+			break;
+		case 17:
+			lightSwitch();
+			break;
+		case 21:
+			lightSwitch();
+			break;
+		case 23:
+			lightSwitch();
+			break;
+		case 27:
+			lightSwitch();
+			break;
+		case 29:
+			lightSwitch();
+			break;
+		case 33:
+			lightSwitch();
+			break;
+		case 38:
+			lightSwitch();
+			break;
+		case 40:
+			lightSwitch();
+			break;
+		case 42:
+			lightSwitch();
+			break;
+		case 44:
+			lightSwitch();
+			break;
+		case 46:
+			lightSwitch();
+			break;
+		case 48:
+			lightSwitch();
+			break;
+		case 59:
+			mosCode = -1;
+			break;
+
+		default:
+			break;
+		}
+		mosCode++;
 	}
-	
-	protected void showAlert(String title,String message,String bt1,String bt2) {
-		Dialog alertDialog = new AlertDialog.Builder(this). 
-                setTitle(title). 
-                setMessage(message).
-                setIcon(R.drawable.ic_launcher).
-                setPositiveButton(bt1, new DialogInterface.OnClickListener() { 
-                     
-                    @Override 
-                    public void onClick(DialogInterface dialog, int which) { 
-                        // TODO Auto-generated method stub  
-                    } 
-                }).
-                setNegativeButton(bt2, new DialogInterface.OnClickListener() { 
-                     
-                    @Override 
-                    public void onClick(DialogInterface dialog, int which) { 
-                        // TODO Auto-generated method stub  
-                    } 
-                }).create(); 
-        alertDialog.show(); 
+
+	protected void showAlert(String title, String message, String bt1,
+			String bt2) {
+		Dialog alertDialog = new AlertDialog.Builder(this).setTitle(title)
+				.setMessage(message).setIcon(R.drawable.ic_launcher)
+				.setPositiveButton(bt1, new DialogInterface.OnClickListener() {
+
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						// TODO Auto-generated method stub
+						if (hasAdvBar) {
+							if (score >= 100) {
+								showPointTxt.setVisibility(View.INVISIBLE);
+								adver.setVisibility(View.INVISIBLE);
+								hasAdvBar = false;
+							}
+						}
+					}
+				})
+				.setNegativeButton(bt2, new DialogInterface.OnClickListener() {
+
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						// TODO Auto-generated method stub
+					}
+				}).create();
+		alertDialog.show();
 	}
-	
+
 	protected void lightSwitch() {
 		if (close) {
 			linear.setBackgroundResource(R.drawable.light_on);
@@ -365,12 +500,12 @@ public class MainActivity extends Activity implements SensorEventListener,MogoOf
 		}
 	}
 
-    @Override
+	@Override
 	protected void onStart() {
-    	Log.e("onStart", "onStart");
-    	mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-    	vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
-    	super.onStart();
+		Log.e("onStart", "onStart");
+		mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+		vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
+		super.onStart();
 	}
 
 	@Override
@@ -393,120 +528,118 @@ public class MainActivity extends Activity implements SensorEventListener,MogoOf
 	@Override
 	protected void onResume() {
 		Log.e("onResume", "onResume");
-		//注册监听器
+		// 注册监听器
 		if (camera == null) {
 			camera = Camera.open();
 		}
-    	mSensorManager.registerListener(this
-    			, mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorManager.SENSOR_DELAY_GAME);
-    	mSensorManager.registerListener(this
-    			, mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL);
+		mSensorManager.registerListener(this,
+				mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION),
+				SensorManager.SENSOR_DELAY_GAME);
+		mSensorManager.registerListener(this,
+				mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
+				SensorManager.SENSOR_DELAY_NORMAL);
 		super.onResume();
 		MobclickAgent.onResume(this);
-		MogoOffer.RefreshPoints(this);
+		// MogoOffer.RefreshPoints(this);
 	}
 
 	@Override
 	protected void onStop() {
 		Log.e("onStop", "onStop");
 		mSensorManager.unregisterListener(this);
-		//存入数据
-        Editor editor = mData.edit();
-        editor.putInt("audioMode", SettingActivity.audioMode);
-        editor.commit();
-        
+		// 存入数据
+		Editor editor = mData.edit();
+		editor.putInt("audioMode", SettingActivity.audioMode);
+		editor.putBoolean("hasAdvBar", hasAdvBar);
+		editor.commit();
+
 		super.onStop();
 	}
 
 	@Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.activity_main, menu);
-        return true;
-    }
-	
+	public boolean onCreateOptionsMenu(Menu menu) {
+		getMenuInflater().inflate(R.menu.activity_main, menu);
+		return true;
+	}
+
 	@Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        super.onOptionsItemSelected(item);
-        Intent intent = new Intent();
+	public boolean onOptionsItemSelected(MenuItem item) {
+		super.onOptionsItemSelected(item);
+		Intent intent = new Intent();
 		intent.setClass(MainActivity.this, SettingActivity.class);
 		startActivity(intent);
-        return true;
-    }
-	
-	protected Animation animRotate(float toDegrees, float pivotXValue, float pivotYValue) {
+		return true;
+	}
+
+	protected Animation animRotate(float toDegrees, float pivotXValue,
+			float pivotYValue) {
 		// TODO Auto-generated method stub
-		animationRotate = new RotateAnimation(0, toDegrees, Animation.RELATIVE_TO_SELF, pivotXValue, Animation.RELATIVE_TO_SELF, pivotYValue);
-		animationRotate.setAnimationListener(new AnimationListener() 
-		{
-			
+		animationRotate = new RotateAnimation(0, toDegrees,
+				Animation.RELATIVE_TO_SELF, pivotXValue,
+				Animation.RELATIVE_TO_SELF, pivotYValue);
+		animationRotate.setAnimationListener(new AnimationListener() {
+
 			@Override
-			public void onAnimationStart(Animation animation) 
-			{
+			public void onAnimationStart(Animation animation) {
 				// TODO Auto-generated method stub
-				
+
 			}
-			
+
 			@Override
-			public void onAnimationRepeat(Animation animation) 
-			{
+			public void onAnimationRepeat(Animation animation) {
 				// TODO Auto-generated method stub
-				
+
 			}
-			
+
 			@Override
-			public void onAnimationEnd(Animation animation) 
-			{
+			public void onAnimationEnd(Animation animation) {
 				// TODO Auto-generated method stub
 				animationRotate.setFillAfter(true);
 			}
 		});
 		return animationRotate;
 	}
-	
-	protected Animation animTranslate(float toX, float toY, final int lastX, final int lastY,
-			final Button button, long durationMillis) {
+
+	protected Animation animTranslate(float toX, float toY, final int lastX,
+			final int lastY, final Button button, long durationMillis) {
 		// TODO Auto-generated method stub
 		animationTranslate = new TranslateAnimation(0, toX, 0, toY);
 		if (isClick) {
-			animationTranslate.setInterpolator(AnimationUtils.loadInterpolator(this,  
-                    android.R.anim.overshoot_interpolator));
-		}else{
-			animationTranslate.setInterpolator(AnimationUtils.loadInterpolator(this,  
-                    android.R.anim.anticipate_interpolator));
+			animationTranslate.setInterpolator(AnimationUtils.loadInterpolator(
+					this, android.R.anim.overshoot_interpolator));
+		} else {
+			animationTranslate.setInterpolator(AnimationUtils.loadInterpolator(
+					this, android.R.anim.anticipate_interpolator));
 		}
-		animationTranslate.setAnimationListener(new AnimationListener()
-		{
-						
+		animationTranslate.setAnimationListener(new AnimationListener() {
+
 			@Override
-			public void onAnimationStart(Animation animation)
-			{
+			public void onAnimationStart(Animation animation) {
 				// TODO Auto-generated method stub
-								
+
 			}
-						
+
 			@Override
-			public void onAnimationRepeat(Animation animation) 
-			{
+			public void onAnimationRepeat(Animation animation) {
 				// TODO Auto-generated method stub
-							
+
 			}
-						
+
 			@Override
-			public void onAnimationEnd(Animation animation)
-			{
+			public void onAnimationEnd(Animation animation) {
 				// TODO Auto-generated method stub
 				params = new LayoutParams(0, 0);
 				params.height = 60;
-				params.width = 60;											
+				params.width = 60;
 				params.setMargins(lastX, lastY, 0, 0);
 				button.setLayoutParams(params);
 				button.clearAnimation();
 				if (!isClick) {
 					button.setVisibility(View.INVISIBLE);
 				}
-						
+
 			}
-		});																								
+		});
 		animationTranslate.setDuration(durationMillis);
 		return animationTranslate;
 	}
@@ -514,49 +647,52 @@ public class MainActivity extends Activity implements SensorEventListener,MogoOf
 	@Override
 	public void onAccuracyChanged(Sensor sensor, int accuracy) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void onSensorChanged(SensorEvent event) {
-		//获取触发event的传感器类型
-				int sensorType = event.sensor.getType();
-				
-				switch(sensorType){
-				case Sensor.TYPE_ORIENTATION:
-					float degree = event.values[0]; //获取z转过的角度
-//					Log.e("获取z转过的角度", ""+degree);
-					//穿件旋转动画
-					RotateAnimation ra = new RotateAnimation(currentDegree,-degree,Animation.RELATIVE_TO_SELF,0.5f,Animation.RELATIVE_TO_SELF,0.5f);
-					ra.setDuration(100);//动画持续时间
-					ImgCompass.startAnimation(ra);
-					currentDegree = -degree;
-					break;
-				case Sensor.TYPE_ACCELEROMETER:
-					// 传感器信息改变时执行该方法 
-		            float[] values = event.values; 
-		            float x = values[0]; // x轴方向的重力加速度，向右为正 
-		            float y = values[1]; // y轴方向的重力加速度，向前为正 
-		            float z = values[2]; // z轴方向的重力加速度，向上为正 
-//		            Log.i(LOG_TAG, "x轴方向的重力加速度" + x +  "；y轴方向的重力加速度" + y +  "；z轴方向的重力加速度" + z); 
-		            // 一般在这三个方向的重力加速度达到40就达到了摇晃手机的状态。 
-		            int medumValue = 19;// 三星 i9250怎么晃都不会超过20，没办法，只设置19了 
-		            if (Math.abs(x) > medumValue || Math.abs(y) > medumValue || Math.abs(z) > medumValue) {
-		            	if (System.currentTimeMillis()-time > 1000) {
-			                Message msg = new Message(); 
-			                msg.what = SENSOR_SHAKE; 
-			                mhandler.sendMessage(msg);
-						}
-		            	time = System.currentTimeMillis(); 
-		            }
-					break;
-				
+		// 获取触发event的传感器类型
+		int sensorType = event.sensor.getType();
+
+		switch (sensorType) {
+		case Sensor.TYPE_ORIENTATION:
+			float degree = event.values[0]; // 获取z转过的角度
+			// Log.e("获取z转过的角度", ""+degree);
+			// 穿件旋转动画
+			RotateAnimation ra = new RotateAnimation(currentDegree, -degree,
+					Animation.RELATIVE_TO_SELF, 0.5f,
+					Animation.RELATIVE_TO_SELF, 0.5f);
+			ra.setDuration(100);// 动画持续时间
+			ImgCompass.startAnimation(ra);
+			currentDegree = -degree;
+			break;
+		case Sensor.TYPE_ACCELEROMETER:
+			// 传感器信息改变时执行该方法
+			float[] values = event.values;
+			float x = values[0]; // x轴方向的重力加速度，向右为正
+			float y = values[1]; // y轴方向的重力加速度，向前为正
+			float z = values[2]; // z轴方向的重力加速度，向上为正
+			// Log.i(LOG_TAG, "x轴方向的重力加速度" + x + "；y轴方向的重力加速度" + y +
+			// "；z轴方向的重力加速度" + z);
+			// 一般在这三个方向的重力加速度达到40就达到了摇晃手机的状态。
+			int medumValue = 19;// 三星 i9250怎么晃都不会超过20，没办法，只设置19了
+			if (Math.abs(x) > medumValue || Math.abs(y) > medumValue
+					|| Math.abs(z) > medumValue) {
+				if (System.currentTimeMillis() - time > 1000) {
+					Message msg = new Message();
+					msg.what = SENSOR_SHAKE;
+					mhandler.sendMessage(msg);
 				}
+				time = System.currentTimeMillis();
+			}
+			break;
+
+		}
 	}
 
-	@Override
-	public void updatePoint(long point) {
-		// TODO Auto-generated method stub
-		showPointTxt.setText("当前积分为:" + point);
-	}
+	/*
+	 * @Override public void updatePoint(long point) { // TODO Auto-generated
+	 * method stub showPointTxt.setText("当前积分为:" + point); }
+	 */
 }

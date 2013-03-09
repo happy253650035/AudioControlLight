@@ -29,6 +29,9 @@
     <uses-permission android:name="android.permission.CALL_PHONE" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.GET_TASKS" />
+    <!-- 点金新增权限 -->	
+	<uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+	<uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT" />
 
     <application
         android:icon="@drawable/ic_launcher"
@@ -67,7 +70,7 @@
                 <data android:scheme="package"></data>
             </intent-filter>
          </receiver>
-         <!-- 芒果自动配置 所需配置 -->
+         <!-- 芒果自动配置 所需配置 
         <activity
             android:name="com.adsmogo.offers.MogoOfferListActivity"
             android:configChanges="orientation|keyboardHidden" >
@@ -81,7 +84,37 @@
             android:configChanges="orientation|keyboardHidden" >
         </activity>
         <service android:name="net.cavas.show.MonitorService" >
-        </service>
+        </service> 被注释 -->
+        <!-- dianjin   start -->
+		<activity android:name="com.nd.dianjin.activity.OfferAppActivity"
+				  android:configChanges="keyboardHidden|orientation"
+				  android:launchMode="singleTask"
+				  
+		/>
+		 <activity android:name="com.nd.dianjin.activity.DownloadManagerActivity"
+				  android:configChanges="keyboardHidden|orientation"
+				  android:launchMode="singleTop"
+		/>
+	
+		<activity android:name="com.nd.dianjin.activity.DetailActivity"
+				  android:configChanges="keyboardHidden|orientation"
+				  android:launchMode="singleTop"
+				  android:theme="@android:style/Theme.Black.NoTitleBar"	
+		/>
+		
+       <service android:name="com.nd.dianjin.appdownload.DownloadService">
+            <intent-filter>
+                <action android:name="com.ddyystudio.audiocontrollight" />
+                <!-- action中的android:name请输入应用的包名 -->
+            </intent-filter>
+       </service>
+        
+	   <service android:name="com.nd.dianjin.service.PackageChangedService"></service>
+		 
+	   <!-- 自己上传各个渠道包的时候，配置dianjin_channel，详见点金广告平台使用手册  4.2配置渠道号-->
+	  <!--  <meta-data android:name="dianjin_channel" android:value="1002" />  -->
+		<!-- dianjin  end -->
+        <!-- 友盟相关 -->
         <meta-data android:value="5135f601527015385b00000b" android:name="UMENG_APPKEY"></meta-data>
 		<meta-data android:value="91" android:name="UMENG_CHANNEL"/>
 		<meta-data android:value="91" android:name="Mobisage_channel"/>

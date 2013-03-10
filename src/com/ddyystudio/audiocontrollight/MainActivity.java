@@ -48,7 +48,6 @@ import com.umeng.analytics.MobclickAgent;
 @SuppressLint("HandlerLeak")
 public class MainActivity extends Activity implements SensorEventListener,UpdatePointsNotifier{
 
-	private static final String LOG_TAG = "MainActivity";
 	private static final int SENSOR_SHAKE = 10;
 	private static final int SOS_SINGLE = 20;
 	private Vibrator vibrator;
@@ -239,7 +238,6 @@ public class MainActivity extends Activity implements SensorEventListener,Update
 						public void run() {
 							long time1 = System.currentTimeMillis();
 							long time2 = time1;
-							// TODO Auto-generated method stub
 							while (isRun) {
 								time2 = System.currentTimeMillis();
 								if (time2 - time1 > 200) {
@@ -309,7 +307,6 @@ public class MainActivity extends Activity implements SensorEventListener,Update
 		buttonRecommend.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				// TODO Auto-generated method stub
 				//显示推荐列表（综合）
 				AppConnect.getInstance(activity).showOffers(activity);
 			}
@@ -322,7 +319,6 @@ public class MainActivity extends Activity implements SensorEventListener,Update
 
 	@Override
 	protected void onDestroy() {
-		// TODO Auto-generated method stub
 		AppConnect.getInstance(this).finalize();
 		super.onDestroy();
 		if (adver != null) {
@@ -405,7 +401,6 @@ public class MainActivity extends Activity implements SensorEventListener,Update
 
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
-						// TODO Auto-generated method stub
 						if (hasAdvBar) {
 							if (score >= 100) {
 								showPointTxt.setVisibility(View.INVISIBLE);
@@ -419,7 +414,6 @@ public class MainActivity extends Activity implements SensorEventListener,Update
 
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
-						// TODO Auto-generated method stub
 					}
 				}).create();
 		alertDialog.show();
@@ -437,7 +431,6 @@ public class MainActivity extends Activity implements SensorEventListener,Update
 				parameters.setFlashMode(Parameters.FLASH_MODE_TORCH);// 开启
 				camera.setParameters(parameters);
 			} catch (Exception e) {
-				// TODO: handle exception
 				Log.e("Camera ERROR", "reason:" + e.getMessage());
 			}
 
@@ -449,7 +442,6 @@ public class MainActivity extends Activity implements SensorEventListener,Update
 				parameters.setFlashMode(Parameters.FLASH_MODE_OFF);// 关闭
 				camera.setParameters(parameters);
 			} catch (Exception e) {
-				// TODO: handle exception
 				Log.e("Camera ERROR", "reason:" + e.getMessage());
 			}
 			close = true;
@@ -479,7 +471,6 @@ public class MainActivity extends Activity implements SensorEventListener,Update
 				parameters.setFlashMode(Parameters.FLASH_MODE_OFF);// 关闭
 				camera.setParameters(parameters);
 			} catch (Exception e) {
-				// TODO: handle exception
 				Log.e("Camera ERROR", "reason:" + e.getMessage());
 			}
 			close = true;
@@ -490,7 +481,6 @@ public class MainActivity extends Activity implements SensorEventListener,Update
 				camera = null;
 			}
 		} catch (Exception e) {
-			// TODO: handle exception
 			Log.e("Camera ERROR", "reason:" + e.getMessage());
 		}
 		mSensorManager.unregisterListener(this);
@@ -506,7 +496,6 @@ public class MainActivity extends Activity implements SensorEventListener,Update
 			try {
 				camera = Camera.open();
 			} catch (Exception e) {
-				// TODO: handle exception
 				Log.e("Camera ERROR", "reason:" + e.getMessage());
 			}
 		}
@@ -554,7 +543,6 @@ public class MainActivity extends Activity implements SensorEventListener,Update
 
 	protected Animation animRotate(float toDegrees, float pivotXValue,
 			float pivotYValue) {
-		// TODO Auto-generated method stub
 		animationRotate = new RotateAnimation(0, toDegrees,
 				Animation.RELATIVE_TO_SELF, pivotXValue,
 				Animation.RELATIVE_TO_SELF, pivotYValue);
@@ -562,19 +550,16 @@ public class MainActivity extends Activity implements SensorEventListener,Update
 
 			@Override
 			public void onAnimationStart(Animation animation) {
-				// TODO Auto-generated method stub
 
 			}
 
 			@Override
 			public void onAnimationRepeat(Animation animation) {
-				// TODO Auto-generated method stub
 
 			}
 
 			@Override
 			public void onAnimationEnd(Animation animation) {
-				// TODO Auto-generated method stub
 				animationRotate.setFillAfter(true);
 			}
 		});
@@ -583,7 +568,6 @@ public class MainActivity extends Activity implements SensorEventListener,Update
 
 	protected Animation animTranslate(float toX, float toY, final int lastX,
 			final int lastY, final Button button, long durationMillis) {
-		// TODO Auto-generated method stub
 		animationTranslate = new TranslateAnimation(0, toX, 0, toY);
 		if (isClick) {
 			animationTranslate.setInterpolator(AnimationUtils.loadInterpolator(
@@ -596,19 +580,16 @@ public class MainActivity extends Activity implements SensorEventListener,Update
 
 			@Override
 			public void onAnimationStart(Animation animation) {
-				// TODO Auto-generated method stub
 
 			}
 
 			@Override
 			public void onAnimationRepeat(Animation animation) {
-				// TODO Auto-generated method stub
 
 			}
 
 			@Override
 			public void onAnimationEnd(Animation animation) {
-				// TODO Auto-generated method stub
 				params = new LayoutParams(0, 0);
 				params.height = (int) (60 * screenHeightFactor);
 				params.width = (int) (60 * screenWidthFactor);
@@ -627,7 +608,6 @@ public class MainActivity extends Activity implements SensorEventListener,Update
 
 	@Override
 	public void onAccuracyChanged(Sensor sensor, int accuracy) {
-		// TODO Auto-generated method stub
 
 	}
 
@@ -682,7 +662,6 @@ public class MainActivity extends Activity implements SensorEventListener,Update
 	 */
 	@Override
 	public void getUpdatePoints(String currencyName, int pointTotal) {
-		// TODO Auto-generated method stub
 		displayPointsText = currencyName + ": " + pointTotal;
 		score = pointTotal;
 		handler.post(mUpdateResults);
@@ -696,7 +675,6 @@ public class MainActivity extends Activity implements SensorEventListener,Update
 	 */
 	@Override
 	public void getUpdatePointsFailed(String error) {
-		// TODO Auto-generated method stub
 		displayPointsText = error;
 		handler.post(mUpdateResults);
 	}

@@ -29,14 +29,13 @@ public class SettingActivity extends Activity {
 	private float screenHeightFactor;
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
-		// TODO Auto-generated method stub
 		Log.e("onCreateonCreate", "onCreateonCreate");
 		super.onCreate(savedInstanceState);
 		
-		 // È«ÆÁÉèÖÃ£¬Òþ²Ø´°¿ÚËùÓÐ×°ÊÎ
+		 // È«ï¿½ï¿½ï¿½ï¿½ï¿½Ã£ï¿½ï¿½ï¿½ï¿½Ø´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×°ï¿½ï¿½
 // 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
 // 				WindowManager.LayoutParams.FLAG_FULLSCREEN);
- 		requestWindowFeature(Window.FEATURE_NO_TITLE); // ÉèÖÃÆÁÄ»ÏÔÊ¾ÎÞ±êÌâ£¬±ØÐëÆô¶¯¾ÍÒªÉèÖÃºÃ£¬·ñÔò²»ÄÜÔÙ´Î±»ÉèÖÃ
+ 		requestWindowFeature(Window.FEATURE_NO_TITLE); // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä»ï¿½ï¿½Ê¾ï¿½Þ±ï¿½ï¿½â£¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ÃºÃ£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ù´Î±ï¿½ï¿½ï¿½ï¿½ï¿½
  		getWindow().setFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD,
  				WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
  		getWindow().setFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
@@ -124,14 +123,12 @@ public class SettingActivity extends Activity {
 	}
 	@Override
 	protected void onPause() {
-		// TODO Auto-generated method stub
 		Log.e("onPauseonPause", "onPauseonPause");
 		super.onPause();
 		MobclickAgent.onPause(this);
 	}
 	@Override
 	protected void onResume() {
-		// TODO Auto-generated method stub
 		switch (audioMode) {
 		case 1:
 			radio1.setBackgroundResource(R.drawable.radio_down);

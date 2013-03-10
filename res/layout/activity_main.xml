@@ -22,7 +22,7 @@
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
         android:background="@drawable/off"
-        android:layout_marginBottom="125dp" />
+        android:layout_marginBottom="115dp" />
 
     <ImageView
         android:id="@+id/imageView1"

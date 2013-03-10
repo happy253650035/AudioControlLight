@@ -7,6 +7,6 @@
 	<classpathentry exported="true" kind="lib" path="/Users/yinyi/Downloads/umeng_sdk_201303051516_analytics/umeng_sdk.jar"/>
 	<classpathentry kind="lib" path="/Users/yinyi/Downloads/mobiSage_Android_SDK/MobiSageSDK/mobisageSDK.jar"/>
 	<classpathentry kind="lib" path="libs/android-support-v4.jar"/>
-	<classpathentry kind="lib" path="libs/dianjin.jar"/>
+	<classpathentry kind="lib" path="libs/AppOffer_1.8.3.jar"/>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>

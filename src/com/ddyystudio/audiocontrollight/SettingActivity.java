@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.Display;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
@@ -18,11 +19,14 @@ public class SettingActivity extends Activity {
 	private static boolean isradio1 = true;
 	private static boolean isradio2 = true;
 	private static boolean isradio3 = true;
-	static int audioMode = 1;
+	static int audioMode = 2;
 	private LayoutParams mbtBackParams = new LayoutParams(0, 0);
 	private LayoutParams radio1Params = new LayoutParams(0, 0);
 	private LayoutParams radio2Params = new LayoutParams(0, 0);
 	private LayoutParams radio3Params = new LayoutParams(0, 0);
+	private static int width, height;
+	private float screenWidthFactor;
+	private float screenHeightFactor;
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		// TODO Auto-generated method stub
@@ -38,25 +42,34 @@ public class SettingActivity extends Activity {
  		getWindow().setFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
  				WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
  		
+ 		Display display = getWindowManager().getDefaultDisplay();
+		height = display.getHeight();
+		width = display.getWidth();
+		
+		screenWidthFactor = (float)width/480;
+		screenHeightFactor = (float)height/854;
+		
+		float factor = (float)854*width/(480*height);
+ 		
 		setContentView(R.layout.setting);
-		mbtBackParams.width = 70;
-		mbtBackParams.height = 70;
+		mbtBackParams.width = (int) (70*screenWidthFactor);
+		mbtBackParams.height = (int) (70*screenHeightFactor);
 		mbtBackParams.setMargins(10, 0, 0, 0);
 		mbtBack = (Button) findViewById(R.id.back);
 		mbtBack.setLayoutParams(mbtBackParams);
-		radio1Params.width = 70;
-		radio1Params.height = 70;
-		radio1Params.setMargins(5, 105, 0, 0);
+		radio1Params.width = (int) (70*screenWidthFactor);
+		radio1Params.height = (int) (70*screenHeightFactor);
+		radio1Params.setMargins((int)(5*screenWidthFactor), (int)(105*screenHeightFactor*factor), 0, 0);
 		radio1 = (Button) findViewById(R.id.radio1);
 		radio1.setLayoutParams(radio1Params);
-		radio2Params.width = 70;
-		radio2Params.height = 70;
-		radio2Params.setMargins(5, 185, 0, 0);
+		radio2Params.width = (int) (70*screenWidthFactor);
+		radio2Params.height = (int) (70*screenHeightFactor);
+		radio2Params.setMargins((int)(5*screenWidthFactor), (int)(185*screenHeightFactor*factor), 0, 0);
 		radio2 = (Button) findViewById(R.id.radio2);
 		radio2.setLayoutParams(radio2Params);
-		radio3Params.width = 70;
-		radio3Params.height = 70;
-		radio3Params.setMargins(5, 270, 0, 0);
+		radio3Params.width = (int) (70*screenWidthFactor);
+		radio3Params.height = (int) (70*screenHeightFactor);
+		radio3Params.setMargins((int)(5*screenWidthFactor), (int)(270*screenHeightFactor*factor), 0, 0);
 		radio3 = (Button) findViewById(R.id.radio3);
 		radio3.setLayoutParams(radio3Params);
 		

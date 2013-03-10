@@ -37,23 +37,16 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.RelativeLayout.LayoutParams;
 import android.widget.TextView;
-import android.widget.Toast;
+import cn.waps.AppConnect;
+import cn.waps.UpdatePointsNotifier;
 
 import com.mobisage.android.MobiSageAdBanner;
 import com.mobisage.android.MobiSageAnimeType;
 import com.mobisage.android.MobiSageEnviroment;
-import com.nd.dianjin.DianJinPlatform;
-import com.nd.dianjin.DianJinPlatform.OfferWallStyle;
-import com.nd.dianjin.listener.AppActivatedListener;
-import com.nd.dianjin.listener.OfferWallStateListener;
-import com.nd.dianjin.webservice.WebServiceListener;
 import com.umeng.analytics.MobclickAgent;
 
 @SuppressLint("HandlerLeak")
-public class MainActivity extends Activity implements SensorEventListener/*
-																		 * ,
-																		 * MogoOfferPointCallBack
-																		 */{
+public class MainActivity extends Activity implements SensorEventListener,UpdatePointsNotifier{
 
 	private static final String LOG_TAG = "MainActivity";
 	private static final int SENSOR_SHAKE = 10;
@@ -88,6 +81,8 @@ public class MainActivity extends Activity implements SensorEventListener/*
 	private TextView showPointTxt;
 	private float score;
 	boolean hasAdvBar = true;
+	private float screenWidthFactor;
+	private float screenHeightFactor;
 
 	private Handler mhandler = new Handler() {
 		public void handleMessage(Message msg) {
@@ -106,12 +101,22 @@ public class MainActivity extends Activity implements SensorEventListener/*
 			}
 		}
 	};
+	String displayPointsText;
+	final Handler handler = new Handler();
+	// 创建一个线程
+		final Runnable mUpdateResults = new Runnable() {
+			public void run() {
+				if (showPointTxt != null) {
+					showPointTxt.setText(displayPointsText);
+				}
+			}
+		};
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		Log.e("onCreate", "onCreate");
 		mData = getSharedPreferences("SP", MODE_PRIVATE);
-		SettingActivity.audioMode = mData.getInt("audioMode", 1);
+		SettingActivity.audioMode = mData.getInt("audioMode", 2);
 		hasAdvBar = mData.getBoolean("hasAdvBar", true);
 		super.onCreate(savedInstanceState);
 		// 全屏设置，隐藏窗口所有装饰
@@ -123,6 +128,14 @@ public class MainActivity extends Activity implements SensorEventListener/*
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
 				WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 		setContentView(R.layout.activity_main);
+
+		Display display = getWindowManager().getDefaultDisplay();
+		height = display.getHeight();
+		width = display.getWidth();
+
+		screenWidthFactor = (float) width / 480;
+		screenHeightFactor = (float) height / 854;
+
 		// 显示积分
 		showPointTxt = (TextView) findViewById(R.id.show_points_txt);
 		if (!hasAdvBar) {
@@ -146,99 +159,10 @@ public class MainActivity extends Activity implements SensorEventListener/*
 		 * MogoOffer.setOfferEntranceMsg("商城");
 		 * MogoOffer.setMogoOfferScoreVisible(false);
 		 */
-		/* * 初始化广告 */
-		DianJinPlatform.initialize(this, 23604,
-				"066f13a97b715961460b91d6ff8a31a3");
-		/*
-		 * 应用安装激活获取奖励接口,如果不需要这个功能可以去掉
-		 */
-		DianJinPlatform.setAppActivatedListener(new AppActivatedListener() {
-			@Override
-			public void onAppActivatedResponse(int responseCode, Float money) {
-				switch (responseCode) {
-				case DianJinPlatform.APP_ACTIVATED_SUCESS:
-					Toast.makeText(MainActivity.this,
-							"奖励M币:" + String.valueOf(money), Toast.LENGTH_SHORT)
-							.show();
-					break;
-				case DianJinPlatform.APP_ACTIVATED_ERROR:
-					Toast.makeText(MainActivity.this, "奖励M币:0",
-							Toast.LENGTH_SHORT).show();
-					break;
-				default:
-					Toast.makeText(MainActivity.this, "奖励M币:ERROR",
-							Toast.LENGTH_SHORT).show();
-					break;
-				}
-			}
-		});
-		/* * 监听推广墙状态接口 */
 
-		DianJinPlatform.setOfferWallStateListener(new OfferWallStateListener() {
-			@Override
-			public void onOfferWallState(int code) {
-				switch (code) {
-				case DianJinPlatform.DIANJIN_OFFERWALL_START:
-					Toast.makeText(MainActivity.this, "推广墙开始",
-							Toast.LENGTH_SHORT).show();
-					break;
-				case DianJinPlatform.DIANJIN_OFFERWALL_DESTROY:
-					Toast.makeText(MainActivity.this, "推广墙结束",
-							Toast.LENGTH_SHORT).show();
-					/* * 查询余额接口 */
-					DianJinPlatform.getBalance(MainActivity.this,
-							new WebServiceListener<Float>() {
-								@Override
-								public void onResponse(int responseCode, Float t) {
-									switch (responseCode) {
-									case DianJinPlatform.DIANJIN_SUCCESS:
-										showPointTxt.setText("当前积分为:" + t);
-										score = t;
-										break;
-									case DianJinPlatform.DIANJIN_ERROR:
-										Toast.makeText(MainActivity.this,
-												"获取余额失败", Toast.LENGTH_SHORT)
-												.show();
-										break;
-									default:
-										Toast.makeText(MainActivity.this,
-												"未知错误，错误码为:" + responseCode,
-												Toast.LENGTH_SHORT).show();
-									}
-								}
-							});
-					break;
-				default:
-					break;
-				}
-			}
-		});
-		// 进入应用时先进行一遍积分查询
-		/* * 查询余额接口 */
-		DianJinPlatform.getBalance(MainActivity.this,
-				new WebServiceListener<Float>() {
-					@Override
-					public void onResponse(int responseCode, Float t) {
-						switch (responseCode) {
-						case DianJinPlatform.DIANJIN_SUCCESS:
-							showPointTxt.setText("当前积分为:" + t);
-							score = t;
-							break;
-						case DianJinPlatform.DIANJIN_ERROR:
-							Toast.makeText(MainActivity.this, "获取余额失败",
-									Toast.LENGTH_SHORT).show();
-							break;
-						default:
-							Toast.makeText(MainActivity.this,
-									"未知错误，错误码为:" + responseCode,
-									Toast.LENGTH_SHORT).show();
-						}
-					}
-				});
-
-		Display display = getWindowManager().getDefaultDisplay();
-		height = display.getHeight();
-		width = display.getWidth();
+		// 初始化统计器，并通过代码设置WAPS_ID, WAPS_PID
+		AppConnect
+				.getInstance("5426f7848320c4b3a77dd3fe3a9f4640", "WAPS", this);
 
 		linear = (RelativeLayout) findViewById(R.id.LinearLayout1);
 		setContentView(linear);
@@ -254,6 +178,8 @@ public class MainActivity extends Activity implements SensorEventListener/*
 		buttonCommit.setVisibility(View.INVISIBLE);
 		myBtn = (Button) findViewById(R.id.button1);
 		buttonRecommend = (Button) findViewById(R.id.recommend);
+		
+		activity = this;
 
 		buttonAdd.setOnClickListener(new OnClickListener() {
 			@Override
@@ -264,21 +190,39 @@ public class MainActivity extends Activity implements SensorEventListener/*
 					buttonSetting.setVisibility(View.VISIBLE);
 					buttonCommit.setVisibility(View.VISIBLE);
 					buttonAdd.startAnimation(animRotate(-45.0f, 0.5f, 0.45f));
-					buttonSosOff.startAnimation(animTranslate(0.0f, -220.0f,
-							width - 100, height - 360, buttonSosOff, 400));
-					buttonSetting.startAnimation(animTranslate(0.0f, -150.0f,
-							width - 100, height - 290, buttonSetting, 400));
-					buttonCommit.startAnimation(animTranslate(0.0f, -80.0f,
-							width - 100, height - 220, buttonCommit, 400));
+					buttonSosOff.startAnimation(animTranslate(0.0f, -220.0f
+							* screenHeightFactor,
+							(int) (width - 100 * screenWidthFactor),
+							(int) (height - 360 * screenHeightFactor),
+							buttonSosOff, 400));
+					buttonSetting.startAnimation(animTranslate(0.0f, -150.0f
+							* screenHeightFactor,
+							(int) (width - 100 * screenWidthFactor),
+							(int) (height - 290 * screenHeightFactor),
+							buttonSetting, 400));
+					buttonCommit.startAnimation(animTranslate(0.0f, -80.0f
+							* screenHeightFactor,
+							(int) (width - 100 * screenWidthFactor),
+							(int) (height - 220 * screenHeightFactor),
+							buttonCommit, 400));
 				} else {
 					isClick = false;
 					buttonAdd.startAnimation(animRotate(90.0f, 0.5f, 0.45f));
-					buttonSosOff.startAnimation(animTranslate(0.0f, 220.0f,
-							width - 100, height - 140, buttonSosOff, 400));
-					buttonSetting.startAnimation(animTranslate(0.0f, 150.0f,
-							width - 100, height - 140, buttonSetting, 400));
-					buttonCommit.startAnimation(animTranslate(0.0f, 80.0f,
-							width - 100, height - 140, buttonCommit, 400));
+					buttonSosOff.startAnimation(animTranslate(0.0f,
+							220.0f * screenHeightFactor,
+							(int) (width - 100 * screenWidthFactor),
+							(int) (height - 140 * screenHeightFactor),
+							buttonSosOff, 400));
+					buttonSetting.startAnimation(animTranslate(0.0f,
+							150.0f * screenHeightFactor,
+							(int) (width - 100 * screenWidthFactor),
+							(int) (height - 140 * screenHeightFactor),
+							buttonSetting, 400));
+					buttonCommit.startAnimation(animTranslate(0.0f,
+							80.0f * screenHeightFactor,
+							(int) (width - 100 * screenWidthFactor),
+							(int) (height - 140 * screenHeightFactor),
+							buttonCommit, 400));
 				}
 			}
 		});
@@ -324,12 +268,21 @@ public class MainActivity extends Activity implements SensorEventListener/*
 				startActivity(intent);
 				isClick = false;
 				buttonAdd.startAnimation(animRotate(90.0f, 0.5f, 0.45f));
-				buttonSosOff.startAnimation(animTranslate(0.0f, 220.0f,
-						width - 100, height - 140, buttonSosOff, 400));
-				buttonSetting.startAnimation(animTranslate(0.0f, 150.0f,
-						width - 100, height - 140, buttonSetting, 400));
-				buttonCommit.startAnimation(animTranslate(0.0f, 80.0f,
-						width - 100, height - 140, buttonCommit, 400));
+				buttonSosOff.startAnimation(animTranslate(0.0f,
+						220.0f * screenHeightFactor,
+						(int) (width - 100 * screenWidthFactor),
+						(int) (height - 140 * screenHeightFactor),
+						buttonSosOff, 400));
+				buttonSetting.startAnimation(animTranslate(0.0f,
+						150.0f * screenHeightFactor,
+						(int) (width - 100 * screenWidthFactor),
+						(int) (height - 140 * screenHeightFactor),
+						buttonSetting, 400));
+				buttonCommit.startAnimation(animTranslate(0.0f,
+						80.0f * screenHeightFactor,
+						(int) (width - 100 * screenWidthFactor),
+						(int) (height - 140 * screenHeightFactor),
+						buttonCommit, 400));
 			}
 		});
 		buttonCommit.setOnClickListener(new OnClickListener() {
@@ -339,10 +292,10 @@ public class MainActivity extends Activity implements SensorEventListener/*
 				if (hasAdvBar) {
 					if (score >= 100) {
 						showAlert("去除广告", "亲，确定要消耗100积分去除广告吗？", "确定", "取消");
-					}else{
+					} else {
 						showAlert("去除广告", "亲，当您的积分达到100分时就可以去除广告哦！", "确定", "取消");
 					}
-				}else{
+				} else {
 					showAlert("感谢", "亲，感谢您对我们应用的使用！", "确定", "取消");
 				}
 			}
@@ -357,13 +310,8 @@ public class MainActivity extends Activity implements SensorEventListener/*
 			@Override
 			public void onClick(View v) {
 				// TODO Auto-generated method stub
-				// MogoOffer.showOffer(activity);
-				// MogoOffer.addPoints(activity, 20);
-				// 显示推广墙接口 OfferWallStyle.BLUE为可选参数
-				DianJinPlatform
-						.showOfferWall(MainActivity.this,
-								DianJinPlatform.Oriention.SENSOR,
-								OfferWallStyle.ORANGE);
+				//显示推荐列表（综合）
+				AppConnect.getInstance(activity).showOffers(activity);
 			}
 		});
 		if (SettingActivity.audioMode == 2) {
@@ -375,8 +323,7 @@ public class MainActivity extends Activity implements SensorEventListener/*
 	@Override
 	protected void onDestroy() {
 		// TODO Auto-generated method stub
-		// MogoOffer.clear(this);
-		DianJinPlatform.destroy();
+		AppConnect.getInstance(this).finalize();
 		super.onDestroy();
 		if (adver != null) {
 			adver.destoryAdView();// 销毁广告
@@ -482,15 +429,29 @@ public class MainActivity extends Activity implements SensorEventListener/*
 		if (close) {
 			linear.setBackgroundResource(R.drawable.light_on);
 			myBtn.setBackgroundResource(R.drawable.on);
-			parameters = camera.getParameters();
-			parameters.setFlashMode(Parameters.FLASH_MODE_TORCH);// 开启
-			camera.setParameters(parameters);
+			try {
+				if (camera == null) {
+					camera = Camera.open();
+				}
+				parameters = camera.getParameters();
+				parameters.setFlashMode(Parameters.FLASH_MODE_TORCH);// 开启
+				camera.setParameters(parameters);
+			} catch (Exception e) {
+				// TODO: handle exception
+				Log.e("Camera ERROR", "reason:" + e.getMessage());
+			}
+
 			close = false;
 		} else {
 			linear.setBackgroundResource(R.drawable.light_off);
 			myBtn.setBackgroundResource(R.drawable.off);
-			parameters.setFlashMode(Parameters.FLASH_MODE_OFF);// 关闭
-			camera.setParameters(parameters);
+			try {
+				parameters.setFlashMode(Parameters.FLASH_MODE_OFF);// 关闭
+				camera.setParameters(parameters);
+			} catch (Exception e) {
+				// TODO: handle exception
+				Log.e("Camera ERROR", "reason:" + e.getMessage());
+			}
 			close = true;
 			if (SettingActivity.audioMode == 2) {
 				isRun = false;
@@ -514,12 +475,24 @@ public class MainActivity extends Activity implements SensorEventListener/*
 		if (!close) {
 			linear.setBackgroundResource(R.drawable.light_off);
 			myBtn.setBackgroundResource(R.drawable.off);
-			parameters.setFlashMode(Parameters.FLASH_MODE_OFF);// 关闭
-			camera.setParameters(parameters);
+			try {
+				parameters.setFlashMode(Parameters.FLASH_MODE_OFF);// 关闭
+				camera.setParameters(parameters);
+			} catch (Exception e) {
+				// TODO: handle exception
+				Log.e("Camera ERROR", "reason:" + e.getMessage());
+			}
 			close = true;
 		}
-		camera.release();
-		camera = null;
+		try {
+			if (camera != null) {
+				camera.release();
+				camera = null;
+			}
+		} catch (Exception e) {
+			// TODO: handle exception
+			Log.e("Camera ERROR", "reason:" + e.getMessage());
+		}
 		mSensorManager.unregisterListener(this);
 		super.onPause();
 		MobclickAgent.onPause(this);
@@ -530,7 +503,12 @@ public class MainActivity extends Activity implements SensorEventListener/*
 		Log.e("onResume", "onResume");
 		// 注册监听器
 		if (camera == null) {
-			camera = Camera.open();
+			try {
+				camera = Camera.open();
+			} catch (Exception e) {
+				// TODO: handle exception
+				Log.e("Camera ERROR", "reason:" + e.getMessage());
+			}
 		}
 		mSensorManager.registerListener(this,
 				mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION),
@@ -538,9 +516,12 @@ public class MainActivity extends Activity implements SensorEventListener/*
 		mSensorManager.registerListener(this,
 				mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
 				SensorManager.SENSOR_DELAY_NORMAL);
+
+		// 从服务器端获取当前用户的虚拟货币.
+		// 返回结果在回调函数getUpdatePoints(...)中处理
+		AppConnect.getInstance(this).getPoints(this);
 		super.onResume();
 		MobclickAgent.onResume(this);
-		// MogoOffer.RefreshPoints(this);
 	}
 
 	@Override
@@ -629,8 +610,8 @@ public class MainActivity extends Activity implements SensorEventListener/*
 			public void onAnimationEnd(Animation animation) {
 				// TODO Auto-generated method stub
 				params = new LayoutParams(0, 0);
-				params.height = 60;
-				params.width = 60;
+				params.height = (int) (60 * screenHeightFactor);
+				params.width = (int) (60 * screenWidthFactor);
 				params.setMargins(lastX, lastY, 0, 0);
 				button.setLayoutParams(params);
 				button.clearAnimation();
@@ -691,8 +672,33 @@ public class MainActivity extends Activity implements SensorEventListener/*
 		}
 	}
 
-	/*
-	 * @Override public void updatePoint(long point) { // TODO Auto-generated
-	 * method stub showPointTxt.setText("当前积分为:" + point); }
+	/**
+	 * AppConnect.getPoints()方法的实现，必须实现
+	 * 
+	 * @param currencyName
+	 *            虚拟货币名称.
+	 * @param pointTotal
+	 *            虚拟货币余额.
 	 */
+	@Override
+	public void getUpdatePoints(String currencyName, int pointTotal) {
+		// TODO Auto-generated method stub
+		displayPointsText = currencyName + ": " + pointTotal;
+		score = pointTotal;
+		handler.post(mUpdateResults);
+	}
+
+	/**
+	 * AppConnect.getPoints() 方法的实现，必须实现
+	 * 
+	 * @param error
+	 *            请求失败的错误信息
+	 */
+	@Override
+	public void getUpdatePointsFailed(String error) {
+		// TODO Auto-generated method stub
+		displayPointsText = error;
+		handler.post(mUpdateResults);
+	}
+
 }

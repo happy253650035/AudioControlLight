@@ -21,9 +21,19 @@
 	<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" /> 
 	<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" /> 
 	<uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+<<<<<<< HEAD
 	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
 	<!-- 万普 -->
 	<uses-permission android:name="android.permission.GET_TASKS" />
+=======
+	<!-- 芒果权限 -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_LOGS" />
+    <uses-permission android:name="android.permission.ACCESS_LOCATION_EXTRA_COMMANDS" />
+    <uses-permission android:name="android.permission.CALL_PHONE" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.GET_TASKS" />
+>>>>>>> parent of 1414605... 加入点金推荐墙，去除芒果平台
 
     <application
         android:icon="@drawable/ic_launcher"
@@ -62,7 +72,7 @@
                 <data android:scheme="package"></data>
             </intent-filter>
          </receiver>
-         <!-- 芒果自动配置 所需配置 
+         <!-- 芒果自动配置 所需配置 -->
         <activity
             android:name="com.adsmogo.offers.MogoOfferListActivity"
             android:configChanges="orientation|keyboardHidden" >
@@ -76,11 +86,15 @@
             android:configChanges="orientation|keyboardHidden" >
         </activity>
         <service android:name="net.cavas.show.MonitorService" >
+<<<<<<< HEAD
         </service> 被注释 -->
         <!-- 万普 -->
         <activity android:name="cn.waps.OffersWebView" android:configChanges="keyboardHidden|orientation" />
         
         <!-- 友盟相关 -->
+=======
+        </service>
+>>>>>>> parent of 1414605... 加入点金推荐墙，去除芒果平台
         <meta-data android:value="5135f601527015385b00000b" android:name="UMENG_APPKEY"></meta-data>
 		<meta-data android:value="91" android:name="UMENG_CHANNEL"/>
 		<meta-data android:value="91" android:name="Mobisage_channel"/>

@@ -115,7 +115,7 @@ public class MainActivity extends Activity implements SensorEventListener,Update
 	public void onCreate(Bundle savedInstanceState) {
 		Log.e("onCreate", "onCreate");
 		mData = getSharedPreferences("SP", MODE_PRIVATE);
-		SettingActivity.audioMode = mData.getInt("audioMode", 2);
+		SettingActivity.audioMode = mData.getInt("audioMode", 1);
 		hasAdvBar = mData.getBoolean("hasAdvBar", true);
 		super.onCreate(savedInstanceState);
 		// 全屏设置，隐藏窗口所有装饰
@@ -160,8 +160,7 @@ public class MainActivity extends Activity implements SensorEventListener,Update
 		 */
 
 		// 初始化统计器，并通过代码设置WAPS_ID, WAPS_PID
-		AppConnect
-				.getInstance("5426f7848320c4b3a77dd3fe3a9f4640", "WAPS", this);
+		AppConnect.getInstance("5426f7848320c4b3a77dd3fe3a9f4640", "appChina", this);
 
 		linear = (RelativeLayout) findViewById(R.id.LinearLayout1);
 		setContentView(linear);

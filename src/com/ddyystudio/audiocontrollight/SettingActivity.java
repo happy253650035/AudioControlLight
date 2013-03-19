@@ -19,7 +19,7 @@ public class SettingActivity extends Activity {
 	private static boolean isradio1 = true;
 	private static boolean isradio2 = true;
 	private static boolean isradio3 = true;
-	static int audioMode = 2;
+	static int audioMode = 1;
 	private LayoutParams mbtBackParams = new LayoutParams(0, 0);
 	private LayoutParams radio1Params = new LayoutParams(0, 0);
 	private LayoutParams radio2Params = new LayoutParams(0, 0);
@@ -32,10 +32,9 @@ public class SettingActivity extends Activity {
 		Log.e("onCreateonCreate", "onCreateonCreate");
 		super.onCreate(savedInstanceState);
 		
-		 // ȫ�����ã����ش�������װ��
 // 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
 // 				WindowManager.LayoutParams.FLAG_FULLSCREEN);
- 		requestWindowFeature(Window.FEATURE_NO_TITLE); // ������Ļ��ʾ�ޱ��⣬����������Ҫ���úã��������ٴα�����
+ 		requestWindowFeature(Window.FEATURE_NO_TITLE); 
  		getWindow().setFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD,
  				WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
  		getWindow().setFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
